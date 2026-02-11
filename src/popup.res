@@ -3,6 +3,8 @@
 type runtime
 type tabsApi
 type tab = Js.Json.t
+type urlLookup = result<string, string>
+type fillResult = result<unit, string>
 
 @val @scope("browser")
 external runtime: runtime = "runtime"
@@ -15,6 +17,19 @@ external sendMessage: (runtime, Js.Json.t) => Js.Promise.t<Js.Json.t> = "sendMes
 
 @send
 external queryTabs: (tabsApi, Js.Json.t) => Js.Promise.t<array<tab>> = "query"
+
+let triggerDownload: (string, string) => unit = %raw(`(url, filename) => {
+  const anchor = document.createElement("a");
+  anchor.href = url;
+  anchor.download = filename;
+  anchor.rel = "noopener";
+  anchor.style.display = "none";
+  document.body.appendChild(anchor);
+  anchor.click();
+  anchor.remove();
+}`)
+
+let makeFilledFilename: unit => string = %raw(`() => "blocky-writer-filled-" + Date.now() + ".pdf"`)
 
 let unsafeJson = (value: 'a): Js.Json.t => Obj.magic(value)
 
@@ -45,6 +60,30 @@ let tabUrl = (entry: tab): option<string> =>
   | None => None
   }
 
+let getActivePdfUrl = (): Js.Promise.t<urlLookup> => {
+  let lookupPromise =
+    Js.Promise2.then(queryTabs(tabsApi, makeTabQuery()), entries => {
+      if Belt.Array.length(entries) == 0 {
+        Js.Promise.resolve(Error("no active tab found"))
+      } else {
+        switch tabUrl(entries[0]) {
+        | None => Js.Promise.resolve(Error("active tab URL unavailable"))
+        | Some(url) =>
+          if looksLikePdfUrl(url) {
+            Js.Promise.resolve(Ok(url))
+          } else {
+            Js.Promise.resolve(Error("active tab is not a PDF URL"))
+          }
+        }
+      }
+    })
+
+  Js.Promise2.catch(lookupPromise, err => {
+    Js.log2("active tab lookup failed", err)
+    Js.Promise.resolve(Error("failed to query active tab"))
+  })
+}
+
 type detectResult = {
   ok: bool,
   blocks: array<PdfTool.block>,
@@ -71,29 +110,58 @@ let decodeDetectResult = (payload: Js.Json.t): detectResult => {
 }
 
 let detectBlocksForActiveTab = (): Js.Promise.t<detectResult> => {
-  let tabsPromise = queryTabs(tabsApi, makeTabQuery())
   let detectPromise =
-    Js.Promise2.then(tabsPromise, entries => {
-      if Belt.Array.length(entries) == 0 {
-        Js.Promise.resolve({ok: false, blocks: [], error: Some("no active tab found")})
-      } else {
-        switch tabUrl(entries[0]) {
-        | None => Js.Promise.resolve({ok: false, blocks: [], error: Some("active tab URL unavailable")})
-        | Some(url) =>
-          if !looksLikePdfUrl(url) {
-            Js.Promise.resolve({ok: false, blocks: [], error: Some("active tab is not a PDF URL")})
-          } else {
-            Js.Promise2.then(sendMessage(runtime, makeDetectMessage(url)), response =>
-              Js.Promise.resolve(decodeDetectResult(response))
-            )
-          }
-        }
+    Js.Promise2.then(getActivePdfUrl(), lookup => {
+      switch lookup {
+      | Error(error) => Js.Promise.resolve({ok: false, blocks: [], error: Some(error)})
+      | Ok(url) =>
+        Js.Promise2.then(sendMessage(runtime, makeDetectMessage(url)), response =>
+          Js.Promise.resolve(decodeDetectResult(response))
+        )
       }
     })
 
   Js.Promise2.catch(detectPromise, err => {
     Js.log2("popup detect failed", err)
     Js.Promise.resolve({ok: false, blocks: [], error: Some("request failed")})
+  })
+}
+
+let fillPdfAndDownload = (
+  ~blocks: array<PdfTool.block>,
+  ~fields: Js.Dict.t<string>,
+): Js.Promise.t<fillResult> => {
+  let fillPromise =
+    Js.Promise2.then(getActivePdfUrl(), lookup => {
+      switch lookup {
+      | Error(error) => Js.Promise.resolve(Error(error))
+      | Ok(url) =>
+        Js.Promise2.then(Webapi.Fetch.fetch(url), response =>
+          Js.Promise2.then(response->Webapi.Fetch.Response.arrayBuffer, pdfBuffer =>
+            Js.Promise2.then(PdfTool.fillBlocks(pdfBuffer, blocks, fields), filledBuffer => {
+              let nativeBuffer: Js.Typed_array.ArrayBuffer.t = Obj.magic(filledBuffer)
+              if Js.Typed_array.ArrayBuffer.byteLength(nativeBuffer) == 0 {
+                Js.Promise.resolve(Error("fill_blocks returned an empty PDF payload"))
+              } else {
+                let blobPart = Webapi.Blob.arrayBufferToBlobPart(nativeBuffer)
+                let blob = Webapi.Blob.makeWithOptions(
+                  [blobPart],
+                  Webapi.Blob.makeBlobPropertyBag(~_type="application/pdf", ()),
+                )
+                let objectUrl = Webapi.Url.createObjectURLFromBlob(blob)
+                triggerDownload(objectUrl, makeFilledFilename())
+                let _timeoutId = Js.Global.setTimeout(() => Webapi.Url.revokeObjectURL(objectUrl), 60000)
+                Js.Promise.resolve(Ok(()))
+              }
+            })
+          )
+        )
+      }
+    })
+
+  Js.Promise2.catch(fillPromise, err => {
+    Js.log2("fill and download failed", err)
+    Js.Promise.resolve(Error("fill and download request failed"))
   })
 }
 
@@ -130,6 +198,26 @@ module App = {
       let _ = Js.Promise2.catch(detectPromise, _ => {
         setIsLoading(_ => false)
         setStatus(_ => "Detection failed: unexpected error")
+        Js.Promise.resolve(())
+      })
+      ()
+    }
+
+    let onFill = (fields: Js.Dict.t<string>): unit => {
+      setIsLoading(_ => true)
+      setStatus(_ => "Filling PDF and preparing download...")
+      let fillPromise =
+        Js.Promise2.then(fillPdfAndDownload(~blocks, ~fields), result => {
+          setIsLoading(_ => false)
+          switch result {
+          | Ok(()) => setStatus(_ => "Filled PDF downloaded")
+          | Error(message) => setStatus(_ => "Fill failed: " ++ message)
+          }
+          Js.Promise.resolve(())
+        })
+      let _ = Js.Promise2.catch(fillPromise, _ => {
+        setIsLoading(_ => false)
+        setStatus(_ => "Fill failed: unexpected error")
         Js.Promise.resolve(())
       })
       ()
@@ -172,12 +260,7 @@ module App = {
         }>
         {React.string("Refresh Detection")}
       </button>
-      <FormFiller
-        blocks={blocks}
-        onFill={fields => {
-          Js.log2("Fill requested", fields)
-        }}
-      />
+      <FormFiller blocks={blocks} onFill />
     </div>
   }
 }
