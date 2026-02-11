@@ -1,0 +1,27 @@
+{
+  "name": "blocky-writer",
+  "sources": [
+    {
+      "dir": "src",
+      "subdirs": true
+    }
+  ],
+  "package-specs": {
+    "module": "es6",
+    "in-source": true
+  },
+  "suffix": ".bs.js",
+  "namespace": true,
+  "bs-dependencies": [
+    "@rescript/react",
+    "rescript-webapi"
+  ],
+  "jsx": {
+    "version": 4,
+    "mode": "automatic"
+  },
+  "warnings": {
+    "number": "+A-42-44-45",
+    "error": "+A-3"
+  }
+}
