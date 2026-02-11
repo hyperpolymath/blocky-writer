@@ -6,11 +6,26 @@ on:
   pull_request:
 
 jobs:
-  rescript-build:
+  core-fill-tests:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: denoland/setup-deno@v2
         with:
           deno-version: v2.x
-      - run: deno task build:res
+      - uses: dtolnay/rust-toolchain@stable
+      - run: deno task test:core-fill
+
+  extension-build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: jetli/wasm-pack-action@v0.4.0
+        with:
+          version: "latest"
+      - run: deno task build:wasm
+      - run: deno task build

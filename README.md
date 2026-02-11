@@ -42,8 +42,24 @@ deno task build:wasm
 deno task dev
 ```
 
+5. Run core fill fixture tests (error taxonomy + AcroForm writeback):
+
+```bash
+deno task test:core-fill
+```
+
 ## Notes
 
-- The initial Rust implementation is a compile-safe skeleton that returns deterministic placeholder blocks.
-- OCR and robust PDF writeback are intentionally staged for follow-up milestones.
+- Rust `fill_blocks` now performs AcroForm-aware writeback for text/select and button widgets, and emits structured taxonomy errors (`code`, `message`, `context`).
+- Popup/background/content surfaces preserve taxonomy codes from the Rust WASM boundary.
 - Source files include SPDX headers targeting AGPL + Palimpsest exception.
+
+## Firefox troubleshooting
+
+- If `deno task dev` fails with `ECONNREFUSED 127.0.0.1:<port>`, verify Firefox is installed and runnable.
+- Close stale Firefox instances launched by prior `web-ext` sessions, then retry `deno task dev`.
+- You can run `web-ext` directly with an explicit binary when needed:
+
+```bash
+deno run -A npm:web-ext run --source-dir dist --firefox /usr/bin/firefox
+```
