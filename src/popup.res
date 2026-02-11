@@ -4,7 +4,11 @@ type runtime
 type tabsApi
 type tab = Js.Json.t
 type urlLookup = result<string, string>
-type fillResult = result<unit, string>
+type fillSuccess = {
+  bytes: int,
+  filename: string,
+}
+type fillResult = result<fillSuccess, string>
 
 @val @scope("browser")
 external runtime: runtime = "runtime"
@@ -30,6 +34,16 @@ let triggerDownload: (string, string) => unit = %raw(`(url, filename) => {
 }`)
 
 let makeFilledFilename: unit => string = %raw(`() => "blocky-writer-filled-" + Date.now() + ".pdf"`)
+let errorDetails: 'a => string = %raw(`(error) => {
+  if (error && typeof error === "object" && "message" in error && error.message) {
+    return String(error.message);
+  }
+  try {
+    return String(error);
+  } catch {
+    return "unknown error";
+  }
+}`)
 
 let unsafeJson = (value: 'a): Js.Json.t => Obj.magic(value)
 
@@ -80,7 +94,7 @@ let getActivePdfUrl = (): Js.Promise.t<urlLookup> => {
 
   Js.Promise2.catch(lookupPromise, err => {
     Js.log2("active tab lookup failed", err)
-    Js.Promise.resolve(Error("failed to query active tab"))
+    Js.Promise.resolve(Error("failed to query active tab: " ++ errorDetails(err)))
   })
 }
 
@@ -123,7 +137,7 @@ let detectBlocksForActiveTab = (): Js.Promise.t<detectResult> => {
 
   Js.Promise2.catch(detectPromise, err => {
     Js.log2("popup detect failed", err)
-    Js.Promise.resolve({ok: false, blocks: [], error: Some("request failed")})
+    Js.Promise.resolve({ok: false, blocks: [], error: Some("request failed: " ++ errorDetails(err))})
   })
 }
 
@@ -140,7 +154,8 @@ let fillPdfAndDownload = (
           Js.Promise2.then(response->Webapi.Fetch.Response.arrayBuffer, pdfBuffer =>
             Js.Promise2.then(PdfTool.fillBlocks(pdfBuffer, blocks, fields), filledBuffer => {
               let nativeBuffer: Js.Typed_array.ArrayBuffer.t = Obj.magic(filledBuffer)
-              if Js.Typed_array.ArrayBuffer.byteLength(nativeBuffer) == 0 {
+              let byteLength = Js.Typed_array.ArrayBuffer.byteLength(nativeBuffer)
+              if byteLength == 0 {
                 Js.Promise.resolve(Error("fill_blocks returned an empty PDF payload"))
               } else {
                 let blobPart = Webapi.Blob.arrayBufferToBlobPart(nativeBuffer)
@@ -149,9 +164,10 @@ let fillPdfAndDownload = (
                   Webapi.Blob.makeBlobPropertyBag(~_type="application/pdf", ()),
                 )
                 let objectUrl = Webapi.Url.createObjectURLFromBlob(blob)
-                triggerDownload(objectUrl, makeFilledFilename())
+                let filename = makeFilledFilename()
+                triggerDownload(objectUrl, filename)
                 let _timeoutId = Js.Global.setTimeout(() => Webapi.Url.revokeObjectURL(objectUrl), 60000)
-                Js.Promise.resolve(Ok(()))
+                Js.Promise.resolve(Ok({bytes: byteLength, filename}))
               }
             })
           )
@@ -161,7 +177,7 @@ let fillPdfAndDownload = (
 
   Js.Promise2.catch(fillPromise, err => {
     Js.log2("fill and download failed", err)
-    Js.Promise.resolve(Error("fill and download request failed"))
+    Js.Promise.resolve(Error("fill and download request failed: " ++ errorDetails(err)))
   })
 }
 
@@ -210,14 +226,21 @@ module App = {
         Js.Promise2.then(fillPdfAndDownload(~blocks, ~fields), result => {
           setIsLoading(_ => false)
           switch result {
-          | Ok(()) => setStatus(_ => "Filled PDF downloaded")
+          | Ok(success) =>
+            setStatus(_ =>
+              "Filled PDF downloaded: "
+              ++ Belt.Int.toString(success.bytes)
+              ++ " bytes ("
+              ++ success.filename
+              ++ ")"
+            )
           | Error(message) => setStatus(_ => "Fill failed: " ++ message)
           }
           Js.Promise.resolve(())
         })
-      let _ = Js.Promise2.catch(fillPromise, _ => {
+      let _ = Js.Promise2.catch(fillPromise, err => {
         setIsLoading(_ => false)
-        setStatus(_ => "Fill failed: unexpected error")
+        setStatus(_ => "Fill failed: unexpected error: " ++ errorDetails(err))
         Js.Promise.resolve(())
       })
       ()
