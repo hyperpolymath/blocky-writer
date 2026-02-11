@@ -116,7 +116,17 @@ let handleDetectionResponse = (response: Js.Json.t): unit => {
         ->Js.Dict.get("error")
         ->Belt.Option.flatMap(Js.Json.decodeString)
         ->Belt.Option.getWithDefault("unknown error")
-      renderPanel(~title="Detection failed", ~detail=message)
+      let code = payload->Js.Dict.get("code")->Belt.Option.flatMap(Js.Json.decodeString)
+      let context = payload->Js.Dict.get("context")->Belt.Option.flatMap(Js.Json.decodeString)
+      let codePrefix = switch code {
+      | Some(value) => "[" ++ value ++ "] "
+      | None => ""
+      }
+      let contextSuffix = switch context {
+      | Some(value) => " (" ++ value ++ ")"
+      | None => ""
+      }
+      renderPanel(~title="Detection failed", ~detail=codePrefix ++ message ++ contextSuffix)
     }
   | None => renderPanel(~title="Detection failed", ~detail="Background returned an invalid payload.")
   }

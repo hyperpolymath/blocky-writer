@@ -3,12 +3,17 @@
 type runtime
 type tabsApi
 type tab = Js.Json.t
-type urlLookup = result<string, string>
+type extensionError = {
+  message: string,
+  code: option<string>,
+  context: option<string>,
+}
+type urlLookup = result<string, extensionError>
 type fillSuccess = {
   bytes: int,
   filename: string,
 }
-type fillResult = result<fillSuccess, string>
+type fillResult = result<fillSuccess, extensionError>
 
 @val @scope("browser")
 external runtime: runtime = "runtime"
@@ -34,7 +39,7 @@ let triggerDownload: (string, string) => unit = %raw(`(url, filename) => {
 }`)
 
 let makeFilledFilename: unit => string = %raw(`() => "blocky-writer-filled-" + Date.now() + ".pdf"`)
-let errorDetails: 'a => string = %raw(`(error) => {
+let errorToString: 'a => string = %raw(`(error) => {
   if (error && typeof error === "object" && "message" in error && error.message) {
     return String(error.message);
   }
@@ -46,6 +51,52 @@ let errorDetails: 'a => string = %raw(`(error) => {
 }`)
 
 let unsafeJson = (value: 'a): Js.Json.t => Obj.magic(value)
+
+let decodeError = (value: 'a): extensionError => {
+  let payload: Js.Json.t = Obj.magic(value)
+  switch Js.Json.decodeObject(payload) {
+  | Some(obj) =>
+    let message =
+      obj
+      ->Js.Dict.get("message")
+      ->Belt.Option.flatMap(Js.Json.decodeString)
+      ->Belt.Option.getWithDefault(errorToString(value))
+    let code = obj->Js.Dict.get("code")->Belt.Option.flatMap(Js.Json.decodeString)
+    let context = obj->Js.Dict.get("context")->Belt.Option.flatMap(Js.Json.decodeString)
+    {message, code, context}
+  | None => {message: errorToString(value), code: None, context: None}
+  }
+}
+
+let withFallbackCode = (error: extensionError, fallbackCode: string): extensionError =>
+  switch error.code {
+  | Some(_) => error
+  | None => {message: error.message, code: Some(fallbackCode), context: error.context}
+  }
+
+let makeError = (
+  ~message: string,
+  ~code: option<string>=None,
+  ~context: option<string>=None,
+): extensionError => {
+  message,
+  code,
+  context,
+}
+
+let formatError = (error: extensionError): string => {
+  let codePrefix =
+    switch error.code {
+    | Some(code) => "[" ++ code ++ "] "
+    | None => ""
+    }
+  let contextSuffix =
+    switch error.context {
+    | Some(context) => " (" ++ context ++ ")"
+    | None => ""
+    }
+  codePrefix ++ error.message ++ contextSuffix
+}
 
 let makeTabQuery = (): Js.Json.t => {
   let payload = Js.Dict.empty()
@@ -78,30 +129,42 @@ let getActivePdfUrl = (): Js.Promise.t<urlLookup> => {
   let lookupPromise =
     Js.Promise2.then(queryTabs(tabsApi, makeTabQuery()), entries => {
       if Belt.Array.length(entries) == 0 {
-        Js.Promise.resolve(Error("no active tab found"))
+        Js.Promise.resolve(Error(makeError(~message="no active tab found", ~code=Some("BW_POPUP_TAB_NOT_FOUND"))))
       } else {
         switch tabUrl(entries[0]) {
-        | None => Js.Promise.resolve(Error("active tab URL unavailable"))
+        | None =>
+          Js.Promise.resolve(
+            Error(makeError(~message="active tab URL unavailable", ~code=Some("BW_POPUP_TAB_URL_MISSING"))),
+          )
         | Some(url) =>
           if looksLikePdfUrl(url) {
             Js.Promise.resolve(Ok(url))
           } else {
-            Js.Promise.resolve(Error("active tab is not a PDF URL"))
+            Js.Promise.resolve(
+              Error(
+                makeError(
+                  ~message="active tab is not a PDF URL",
+                  ~code=Some("BW_POPUP_TAB_NOT_PDF"),
+                  ~context=Some(url),
+                ),
+              ),
+            )
           }
         }
       }
     })
 
   Js.Promise2.catch(lookupPromise, err => {
-    Js.log2("active tab lookup failed", err)
-    Js.Promise.resolve(Error("failed to query active tab: " ++ errorDetails(err)))
+    let decoded = decodeError(err)->withFallbackCode("BW_POPUP_TAB_QUERY_FAILED")
+    Js.log2("active tab lookup failed", decoded)
+    Js.Promise.resolve(Error(decoded))
   })
 }
 
 type detectResult = {
   ok: bool,
   blocks: array<PdfTool.block>,
-  error: option<string>,
+  error: option<extensionError>,
 }
 
 let decodeDetectResult = (payload: Js.Json.t): detectResult => {
@@ -117,9 +180,31 @@ let decodeDetectResult = (payload: Js.Json.t): detectResult => {
         }
       | None => []
       }
-    let error = obj->Js.Dict.get("error")->Belt.Option.flatMap(Js.Json.decodeString)
+    let code = obj->Js.Dict.get("code")->Belt.Option.flatMap(Js.Json.decodeString)
+    let context = obj->Js.Dict.get("context")->Belt.Option.flatMap(Js.Json.decodeString)
+    let error =
+      switch obj->Js.Dict.get("error")->Belt.Option.flatMap(Js.Json.decodeString) {
+      | Some(message) => Some({message, code, context})
+      | None =>
+        if ok {
+          None
+        } else {
+          Some({
+            message: "background worker returned an unspecified failure",
+            code,
+            context,
+          })
+        }
+      }
     {ok, blocks, error}
-  | None => {ok: false, blocks: [], error: Some("invalid background response")}
+  | None =>
+    {
+      ok: false,
+      blocks: [],
+      error: Some(
+        makeError(~message="invalid background response", ~code=Some("BW_POPUP_BG_RESPONSE_INVALID")),
+      ),
+    }
   }
 }
 
@@ -136,8 +221,9 @@ let detectBlocksForActiveTab = (): Js.Promise.t<detectResult> => {
     })
 
   Js.Promise2.catch(detectPromise, err => {
-    Js.log2("popup detect failed", err)
-    Js.Promise.resolve({ok: false, blocks: [], error: Some("request failed: " ++ errorDetails(err))})
+    let decoded = decodeError(err)->withFallbackCode("BW_POPUP_DETECT_REQUEST_FAILED")
+    Js.log2("popup detect failed", decoded)
+    Js.Promise.resolve({ok: false, blocks: [], error: Some(decoded)})
   })
 }
 
@@ -156,7 +242,9 @@ let fillPdfAndDownload = (
               let nativeBuffer: Js.Typed_array.ArrayBuffer.t = Obj.magic(filledBuffer)
               let byteLength = Js.Typed_array.ArrayBuffer.byteLength(nativeBuffer)
               if byteLength == 0 {
-                Js.Promise.resolve(Error("fill_blocks returned an empty PDF payload"))
+                Js.Promise.resolve(
+                  Error(makeError(~message="fill_blocks returned an empty PDF payload", ~code=Some("BW_POPUP_FILL_EMPTY"))),
+                )
               } else {
                 let blobPart = Webapi.Blob.arrayBufferToBlobPart(nativeBuffer)
                 let blob = Webapi.Blob.makeWithOptions(
@@ -176,8 +264,9 @@ let fillPdfAndDownload = (
     })
 
   Js.Promise2.catch(fillPromise, err => {
-    Js.log2("fill and download failed", err)
-    Js.Promise.resolve(Error("fill and download request failed: " ++ errorDetails(err)))
+    let decoded = decodeError(err)->withFallbackCode("BW_POPUP_FILL_REQUEST_FAILED")
+    Js.log2("fill and download failed", decoded)
+    Js.Promise.resolve(Error(decoded))
   })
 }
 
@@ -206,14 +295,19 @@ module App = {
             )
           } else {
             setBlocks(_ => [])
-            let message = result.error->Belt.Option.getWithDefault("unknown error")
+            let message =
+              switch result.error {
+              | Some(error) => formatError(error)
+              | None => "unknown error"
+              }
             setStatus(_ => "Detection failed: " ++ message)
           }
           Js.Promise.resolve(())
         })
-      let _ = Js.Promise2.catch(detectPromise, _ => {
+      let _ = Js.Promise2.catch(detectPromise, err => {
+        let decoded = decodeError(err)->withFallbackCode("BW_POPUP_DETECT_UNEXPECTED")
         setIsLoading(_ => false)
-        setStatus(_ => "Detection failed: unexpected error")
+        setStatus(_ => "Detection failed: " ++ formatError(decoded))
         Js.Promise.resolve(())
       })
       ()
@@ -234,13 +328,14 @@ module App = {
               ++ success.filename
               ++ ")"
             )
-          | Error(message) => setStatus(_ => "Fill failed: " ++ message)
+          | Error(error) => setStatus(_ => "Fill failed: " ++ formatError(error))
           }
           Js.Promise.resolve(())
         })
       let _ = Js.Promise2.catch(fillPromise, err => {
+        let decoded = decodeError(err)->withFallbackCode("BW_POPUP_FILL_UNEXPECTED")
         setIsLoading(_ => false)
-        setStatus(_ => "Fill failed: unexpected error: " ++ errorDetails(err))
+        setStatus(_ => "Fill failed: " ++ formatError(decoded))
         Js.Promise.resolve(())
       })
       ()

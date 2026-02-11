@@ -38,11 +38,7 @@ let ensureInitialized = (): Js.Promise.t<unit> => {
 
 let detectBlocks = (pdfData: arrayBuffer): Js.Promise.t<array<block>> => {
   let bytes = Js.Typed_array.Uint8Array.fromBuffer(toNativeArrayBuffer(pdfData))
-  let detection = Js.Promise2.then(ensureInitialized(), _ => Js.Promise.resolve(detectBlocksNative(bytes)))
-  Js.Promise2.catch(detection, err => {
-    Js.log2("detectBlocks error", err)
-    Js.Promise.resolve([])
-  })
+  Js.Promise2.then(ensureInitialized(), _ => Js.Promise.resolve(detectBlocksNative(bytes)))
 }
 
 let fillBlocks = (
@@ -51,12 +47,8 @@ let fillBlocks = (
   fields: Js.Dict.t<string>,
 ): Js.Promise.t<arrayBuffer> => {
   let bytes = Js.Typed_array.Uint8Array.fromBuffer(toNativeArrayBuffer(pdfData))
-  let fill = Js.Promise2.then(ensureInitialized(), _ => {
+  Js.Promise2.then(ensureInitialized(), _ => {
     let filled = fillBlocksNative(bytes, blocks, fields)
     Js.Promise.resolve(fromNativeArrayBuffer(Js.Typed_array.Uint8Array.buffer(filled)))
-  })
-  Js.Promise2.catch(fill, err => {
-    Js.log2("fillBlocks error", err)
-    Js.Promise.resolve(fromNativeArrayBuffer(Js.Typed_array.ArrayBuffer.make(0)))
   })
 }

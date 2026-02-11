@@ -8,6 +8,7 @@
     "npm:rescript-webapi@~0.9.1": "0.9.1",
     "npm:rescript@*": "11.1.4",
     "npm:rescript@^11.1.4": "11.1.4",
+    "npm:web-ext@*": "8.10.0",
     "npm:web-ext@^8.5.0": "8.10.0",
     "npm:webpack-cli@^6.0.1": "6.0.1_webpack@5.105.1__acorn@8.15.0",
     "npm:webpack@*": "5.105.1_acorn@8.15.0",
