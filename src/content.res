@@ -44,7 +44,7 @@ let renderPanel = (~title: string, ~detail: string): unit => {
     ++ "</div>"
     ++ "</section>"
 
-  SafeDOM.mountWhenReady(
+  ProvenMount.mountWhenReady(
     "#blocky-writer-overlay",
     html,
     ~onSuccess={_ => ()},
