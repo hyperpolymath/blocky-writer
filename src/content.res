@@ -8,6 +8,50 @@ external runtime: runtime = "runtime"
 @send
 external sendMessage: (runtime, Js.Json.t) => Js.Promise.t<Js.Json.t> = "sendMessage"
 
+let ensureOverlayMountPoint: unit => unit = %raw(`() => {
+  if (document.querySelector("#blocky-writer-overlay") !== null) return;
+  const root = document.createElement("div");
+  root.id = "blocky-writer-overlay";
+  root.style.position = "fixed";
+  root.style.right = "16px";
+  root.style.bottom = "16px";
+  root.style.zIndex = "2147483647";
+  root.style.width = "320px";
+  root.style.maxWidth = "90vw";
+  root.style.fontFamily = "ui-sans-serif, system-ui, -apple-system, Segoe UI, sans-serif";
+  document.body.appendChild(root);
+}`)
+
+let escapeHtml: string => string = %raw(`(value) =>
+  value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;")
+`)
+
+let renderPanel = (~title: string, ~detail: string): unit => {
+  let safeTitle = escapeHtml(title)
+  let safeDetail = escapeHtml(detail)
+  let html =
+    "<section style='background:#111827;color:#fff;border-radius:10px;padding:12px;box-shadow:0 10px 30px rgba(0,0,0,.3);'>"
+    ++ "<div style='font-size:13px;font-weight:700;margin-bottom:6px;'>Blocky Writer</div>"
+    ++ "<div style='font-size:12px;line-height:1.4;'><strong>"
+    ++ safeTitle
+    ++ "</strong><br />"
+    ++ safeDetail
+    ++ "</div>"
+    ++ "</section>"
+
+  SafeDOM.mountWhenReady(
+    "#blocky-writer-overlay",
+    html,
+    ~onSuccess={_ => ()},
+    ~onError={error => Js.log2("Blocky Writer overlay mount error", error)},
+  )
+}
+
 let unsafeJson = (value: 'a): Js.Json.t => Obj.magic(value)
 
 let makeDetectMessage = (url: string): Js.Json.t => {
@@ -17,7 +61,12 @@ let makeDetectMessage = (url: string): Js.Json.t => {
   unsafeJson(payload)
 }
 
-let isPdfUrl = (url: string): bool => url->Js.String2.toLowerCase->Js.String2.endsWith(".pdf")
+let isPdfUrl = (url: string): bool => {
+  let lower = url->Js.String2.toLowerCase
+  lower->Js.String2.endsWith(".pdf")
+  || lower->Js.String2.includes(".pdf?")
+  || lower->Js.String2.includes(".pdf#")
+}
 
 let findPdfTarget = (): option<string> => {
   let currentUrl = Webapi.Dom.location->Webapi.Dom.Location.href
@@ -41,7 +90,7 @@ let findPdfTarget = (): option<string> => {
   }
 }
 
-let logDetectionResponse = (response: Js.Json.t): unit => {
+let handleDetectionResponse = (response: Js.Json.t): unit => {
   switch Js.Json.decodeObject(response) {
   | Some(payload) =>
     let ok =
@@ -53,29 +102,37 @@ let logDetectionResponse = (response: Js.Json.t): unit => {
         ->Belt.Option.flatMap(Js.Json.decodeArray)
         ->Belt.Option.map(Belt.Array.length)
         ->Belt.Option.getWithDefault(0)
-      Js.log2("Blocky Writer detected blocks", count)
+      if count == 0 {
+        renderPanel(~title="No widgets detected", ~detail="This PDF did not expose form widgets.")
+      } else {
+        renderPanel(
+          ~title="Detection successful",
+          ~detail="Detected " ++ Belt.Int.toString(count) ++ " PDF widgets ready for filling.",
+        )
+      }
     } else {
       let message =
         payload
         ->Js.Dict.get("error")
         ->Belt.Option.flatMap(Js.Json.decodeString)
         ->Belt.Option.getWithDefault("unknown error")
-      Js.log2("Blocky Writer detection failed", message)
+      renderPanel(~title="Detection failed", ~detail=message)
     }
-  | None => Js.log("Blocky Writer received non-object response")
+  | None => renderPanel(~title="Detection failed", ~detail="Background returned an invalid payload.")
   }
 }
 
 let requestBlockDetection = (targetUrl: string): unit => {
-  Js.log2("Blocky Writer detectBlocks target", targetUrl)
+  renderPanel(~title="Scanning PDF", ~detail="Requesting block detection...")
   let request = makeDetectMessage(targetUrl)
   let sendPromise = sendMessage(runtime, request)
   let loggedPromise = Js.Promise2.then(sendPromise, response => {
-    logDetectionResponse(response)
+    handleDetectionResponse(response)
     Js.Promise.resolve(response)
   })
   let _ = Js.Promise2.catch(loggedPromise, err => {
     Js.log2("Blocky Writer message failed", err)
+    renderPanel(~title="Detection failed", ~detail="Unable to contact extension background worker.")
     Js.Promise.resolve(Js.Json.null)
   })
   ()
@@ -84,8 +141,9 @@ let requestBlockDetection = (targetUrl: string): unit => {
 let currentUrl = Webapi.Dom.location->Webapi.Dom.Location.href
 
 if currentUrl->Js.String2.includes("gov.uk") {
+  ensureOverlayMountPoint()
   switch findPdfTarget() {
   | Some(targetUrl) => requestBlockDetection(targetUrl)
-  | None => Js.log("Blocky Writer found no PDF target on page")
+  | None => renderPanel(~title="No PDF target found", ~detail="Open a .pdf URL or include a direct PDF link on this page.")
   }
 }
