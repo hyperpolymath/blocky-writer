@@ -9,6 +9,7 @@
     "build:js:dev": "deno run -A npm:webpack --mode=development",
     "build": "deno task build:res && deno task build:js",
     "dev": "deno task build:res && deno task build:js:dev && deno run -A npm:web-ext run --source-dir dist",
-    "lint": "deno task build:res"
+    "lint": "deno task build:res",
+    "test:core-fill": "cargo test --manifest-path rust/pdftool_core/Cargo.toml fill_blocks_"
   }
 }

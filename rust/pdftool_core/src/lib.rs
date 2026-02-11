@@ -22,9 +22,9 @@ struct CoreErrorPayload {
     context: Option<String>,
 }
 
-type CoreResult<T> = Result<T, JsValue>;
+type CoreResult<T> = Result<T, CoreErrorPayload>;
 
-fn core_error(code: &'static str, message: impl Into<String>) -> JsValue {
+fn core_error(code: &'static str, message: impl Into<String>) -> CoreErrorPayload {
     core_error_with_context(code, message, None)
 }
 
@@ -32,12 +32,15 @@ fn core_error_with_context(
     code: &'static str,
     message: impl Into<String>,
     context: Option<String>,
-) -> JsValue {
-    let payload = CoreErrorPayload {
+) -> CoreErrorPayload {
+    CoreErrorPayload {
         code,
         message: message.into(),
         context,
-    };
+    }
+}
+
+fn core_error_to_js(payload: CoreErrorPayload) -> JsValue {
     serde_wasm_bindgen::to_value(&payload)
         .unwrap_or_else(|_| JsValue::from_str(&format!("{}: {}", payload.code, payload.message)))
 }
@@ -521,8 +524,7 @@ fn apply_field_value(doc: &mut Document, descriptor: &FieldDescriptor, value: &s
     }
 }
 
-#[wasm_bindgen]
-pub fn detect_blocks(pdf_data: &[u8]) -> Result<JsValue, JsValue> {
+fn detect_blocks_impl(pdf_data: &[u8]) -> CoreResult<Vec<Block>> {
     if pdf_data.is_empty() {
         return Err(core_error("BW_PDF_EMPTY", "empty PDF payload"));
     }
@@ -594,35 +596,13 @@ pub fn detect_blocks(pdf_data: &[u8]) -> Result<JsValue, JsValue> {
         }
     }
 
-    serde_wasm_bindgen::to_value(&blocks)
-        .map_err(|err| core_error_with_context("BW_SERIALIZATION_ERROR", err.to_string(), Some("detect_blocks".into())))
+    Ok(blocks)
 }
 
-#[wasm_bindgen]
-pub fn fill_blocks(
-    pdf_data: &[u8],
-    blocks: JsValue,
-    fields: JsValue,
-) -> Result<js_sys::Uint8Array, JsValue> {
+fn fill_blocks_impl(pdf_data: &[u8], field_values: HashMap<String, String>) -> CoreResult<Vec<u8>> {
     if pdf_data.is_empty() {
         return Err(core_error("BW_PDF_EMPTY", "empty PDF payload"));
     }
-
-    let _requested_blocks: Vec<Block> = serde_wasm_bindgen::from_value(blocks).map_err(|err| {
-        core_error_with_context(
-            "BW_BLOCKS_PAYLOAD_INVALID",
-            err.to_string(),
-            Some("fill_blocks blocks argument".into()),
-        )
-    })?;
-
-    let field_values: HashMap<String, String> = serde_wasm_bindgen::from_value(fields).map_err(|err| {
-        core_error_with_context(
-            "BW_FIELDS_PAYLOAD_INVALID",
-            err.to_string(),
-            Some("fill_blocks fields argument".into()),
-        )
-    })?;
 
     let mut doc = Document::load_mem(pdf_data)
         .map_err(|err| core_error_with_context("BW_PDF_INVALID", err.to_string(), Some("Document::load_mem".into())))?;
@@ -688,5 +668,275 @@ pub fn fill_blocks(
     doc.save_to(&mut output)
         .map_err(|err| core_error_with_context("BW_FILL_SAVE_FAILED", err.to_string(), Some("Document::save_to".into())))?;
 
+    Ok(output)
+}
+
+#[wasm_bindgen]
+pub fn detect_blocks(pdf_data: &[u8]) -> Result<JsValue, JsValue> {
+    let blocks = detect_blocks_impl(pdf_data).map_err(core_error_to_js)?;
+    serde_wasm_bindgen::to_value(&blocks)
+        .map_err(|err| core_error_to_js(core_error_with_context("BW_SERIALIZATION_ERROR", err.to_string(), Some("detect_blocks".into()))))
+}
+
+#[wasm_bindgen]
+pub fn fill_blocks(
+    pdf_data: &[u8],
+    blocks: JsValue,
+    fields: JsValue,
+) -> Result<js_sys::Uint8Array, JsValue> {
+    let _requested_blocks: Vec<Block> = serde_wasm_bindgen::from_value(blocks).map_err(|err| {
+        core_error_to_js(core_error_with_context(
+            "BW_BLOCKS_PAYLOAD_INVALID",
+            err.to_string(),
+            Some("fill_blocks blocks argument".into()),
+        ))
+    })?;
+
+    let field_values: HashMap<String, String> = serde_wasm_bindgen::from_value(fields).map_err(|err| {
+        core_error_to_js(core_error_with_context(
+            "BW_FIELDS_PAYLOAD_INVALID",
+            err.to_string(),
+            Some("fill_blocks fields argument".into()),
+        ))
+    })?;
+    let output = fill_blocks_impl(pdf_data, field_values).map_err(core_error_to_js)?;
     Ok(js_sys::Uint8Array::from(output.as_slice()))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use lopdf::{dictionary, Stream};
+
+    fn name(value: &str) -> Object {
+        Object::Name(value.as_bytes().to_vec())
+    }
+
+    fn rect(llx: i64, lly: i64, urx: i64, ury: i64) -> Object {
+        Object::Array(vec![llx.into(), lly.into(), urx.into(), ury.into()])
+    }
+
+    fn assert_error_code(result: CoreResult<Vec<u8>>, expected_code: &str) {
+        let payload = result.expect_err("expected fill_blocks to fail");
+        assert_eq!(payload.code, expected_code);
+        assert!(!payload.message.is_empty(), "error message should not be empty");
+    }
+
+    fn make_fixture_pdf() -> Vec<u8> {
+        let mut doc = Document::with_version("1.7");
+
+        let pages_id = doc.new_object_id();
+        let page_id = doc.new_object_id();
+        let content_id = doc.new_object_id();
+        let catalog_id = doc.new_object_id();
+        let acroform_id = doc.new_object_id();
+
+        let text_field_id = doc.new_object_id();
+        let checkbox_field_id = doc.new_object_id();
+        let radio_parent_id = doc.new_object_id();
+        let radio_widget_a_id = doc.new_object_id();
+        let radio_widget_b_id = doc.new_object_id();
+
+        let content_stream = Stream::new(dictionary! {}, Vec::new());
+        doc.objects
+            .insert(content_id, Object::Stream(content_stream));
+
+        let text_field = dictionary! {
+            "Type" => name("Annot"),
+            "Subtype" => name("Widget"),
+            "FT" => name("Tx"),
+            "T" => Object::string_literal("Name"),
+            "V" => Object::string_literal(""),
+            "Rect" => rect(50, 700, 250, 724),
+            "P" => Object::Reference(page_id),
+        };
+        doc.objects
+            .insert(text_field_id, Object::Dictionary(text_field));
+
+        let checkbox_field = dictionary! {
+            "Type" => name("Annot"),
+            "Subtype" => name("Widget"),
+            "FT" => name("Btn"),
+            "T" => Object::string_literal("Consent"),
+            "V" => name("Off"),
+            "AS" => name("Off"),
+            "Rect" => rect(50, 650, 70, 670),
+            "P" => Object::Reference(page_id),
+            "AP" => Object::Dictionary(dictionary! {
+                "N" => Object::Dictionary(dictionary! {
+                    "Off" => Object::Null,
+                    "Yes" => Object::Null,
+                })
+            }),
+        };
+        doc.objects
+            .insert(checkbox_field_id, Object::Dictionary(checkbox_field));
+
+        let radio_parent = dictionary! {
+            "FT" => name("Btn"),
+            "T" => Object::string_literal("Choice"),
+            "Ff" => Object::Integer(32768),
+            "Kids" => Object::Array(vec![
+                Object::Reference(radio_widget_a_id),
+                Object::Reference(radio_widget_b_id),
+            ]),
+        };
+        doc.objects
+            .insert(radio_parent_id, Object::Dictionary(radio_parent));
+
+        let radio_widget_a = dictionary! {
+            "Type" => name("Annot"),
+            "Subtype" => name("Widget"),
+            "Parent" => Object::Reference(radio_parent_id),
+            "Rect" => rect(50, 600, 70, 620),
+            "P" => Object::Reference(page_id),
+            "AS" => name("Off"),
+            "AP" => Object::Dictionary(dictionary! {
+                "N" => Object::Dictionary(dictionary! {
+                    "Off" => Object::Null,
+                    "A" => Object::Null,
+                })
+            }),
+        };
+        doc.objects
+            .insert(radio_widget_a_id, Object::Dictionary(radio_widget_a));
+
+        let radio_widget_b = dictionary! {
+            "Type" => name("Annot"),
+            "Subtype" => name("Widget"),
+            "Parent" => Object::Reference(radio_parent_id),
+            "Rect" => rect(120, 600, 140, 620),
+            "P" => Object::Reference(page_id),
+            "AS" => name("Off"),
+            "AP" => Object::Dictionary(dictionary! {
+                "N" => Object::Dictionary(dictionary! {
+                    "Off" => Object::Null,
+                    "B" => Object::Null,
+                })
+            }),
+        };
+        doc.objects
+            .insert(radio_widget_b_id, Object::Dictionary(radio_widget_b));
+
+        let page = dictionary! {
+            "Type" => name("Page"),
+            "Parent" => Object::Reference(pages_id),
+            "MediaBox" => rect(0, 0, 595, 842),
+            "Resources" => Object::Dictionary(dictionary! {}),
+            "Contents" => Object::Reference(content_id),
+            "Annots" => Object::Array(vec![
+                Object::Reference(text_field_id),
+                Object::Reference(checkbox_field_id),
+                Object::Reference(radio_widget_a_id),
+                Object::Reference(radio_widget_b_id),
+            ]),
+        };
+        doc.objects.insert(page_id, Object::Dictionary(page));
+
+        let pages = dictionary! {
+            "Type" => name("Pages"),
+            "Kids" => Object::Array(vec![Object::Reference(page_id)]),
+            "Count" => Object::Integer(1),
+        };
+        doc.objects.insert(pages_id, Object::Dictionary(pages));
+
+        let acroform = dictionary! {
+            "Fields" => Object::Array(vec![
+                Object::Reference(text_field_id),
+                Object::Reference(checkbox_field_id),
+                Object::Reference(radio_parent_id),
+            ]),
+        };
+        doc.objects
+            .insert(acroform_id, Object::Dictionary(acroform));
+
+        let catalog = dictionary! {
+            "Type" => name("Catalog"),
+            "Pages" => Object::Reference(pages_id),
+            "AcroForm" => Object::Reference(acroform_id),
+        };
+        doc.objects
+            .insert(catalog_id, Object::Dictionary(catalog));
+        doc.trailer.set(b"Root", Object::Reference(catalog_id));
+
+        let mut bytes = Vec::new();
+        doc.save_to(&mut bytes).expect("serialize fixture pdf");
+        bytes
+    }
+
+    #[test]
+    fn fill_blocks_errors_on_empty_pdf() {
+        let fields = HashMap::<String, String>::new();
+        let result = fill_blocks_impl(&[], fields);
+        assert_error_code(result, "BW_PDF_EMPTY");
+    }
+
+    #[test]
+    fn fill_blocks_errors_on_invalid_pdf() {
+        let fields = HashMap::<String, String>::new();
+        let result = fill_blocks_impl(&[1, 2, 3, 4], fields);
+        assert_error_code(result, "BW_PDF_INVALID");
+    }
+
+    #[test]
+    fn fill_blocks_errors_when_acroform_missing() {
+        let mut doc = Document::with_version("1.7");
+        let pages_id = doc.new_object_id();
+        let catalog_id = doc.new_object_id();
+        doc.objects.insert(
+            pages_id,
+            Object::Dictionary(dictionary! {
+                "Type" => name("Pages"),
+                "Kids" => Object::Array(vec![]),
+                "Count" => Object::Integer(0),
+            }),
+        );
+        doc.objects.insert(
+            catalog_id,
+            Object::Dictionary(dictionary! {
+                "Type" => name("Catalog"),
+                "Pages" => Object::Reference(pages_id),
+            }),
+        );
+        doc.trailer.set(b"Root", Object::Reference(catalog_id));
+        let mut input = Vec::new();
+        doc.save_to(&mut input).expect("serialize minimal catalog");
+
+        let result = fill_blocks_impl(&input, HashMap::new());
+        assert_error_code(result, "BW_FORM_MISSING_ACROFORM");
+    }
+
+    #[test]
+    fn fill_blocks_errors_when_no_field_names_match() {
+        let pdf = make_fixture_pdf();
+        let mut fields = HashMap::new();
+        fields.insert("UnknownField".to_string(), "value".to_string());
+        let result = fill_blocks_impl(&pdf, fields);
+        assert_error_code(result, "BW_FILL_NO_MATCHING_FIELDS");
+    }
+
+    #[test]
+    fn fill_blocks_errors_on_invalid_radio_value() {
+        let pdf = make_fixture_pdf();
+        let mut fields = HashMap::new();
+        fields.insert("Choice".to_string(), "not-a-state".to_string());
+        let payload = fill_blocks_impl(&pdf, fields).expect_err("invalid radio value should fail");
+        assert_eq!(payload.code, "BW_FILL_BUTTON_VALUE_INVALID");
+        assert_eq!(payload.context.as_deref(), Some("Choice"));
+    }
+
+    #[test]
+    fn fill_blocks_updates_fixture_pdf() {
+        let input_pdf = make_fixture_pdf();
+        let mut fields = HashMap::new();
+        fields.insert("Name".to_string(), "Ada Lovelace".to_string());
+        fields.insert("Consent".to_string(), "true".to_string());
+        fields.insert("Choice".to_string(), "A".to_string());
+
+        let output_bytes = fill_blocks_impl(&input_pdf, fields).expect("fixture fields should be fillable");
+
+        assert!(!output_bytes.is_empty(), "filled PDF payload should not be empty");
+        assert_ne!(output_bytes, input_pdf, "filled PDF should differ from input bytes");
+        Document::load_mem(&output_bytes).expect("filled payload should remain a valid PDF");
+    }
 }
