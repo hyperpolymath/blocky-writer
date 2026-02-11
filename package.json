@@ -4,13 +4,14 @@
   "private": true,
   "description": "Firefox extension for block-based PDF form filling using ReScript + Rust/WASM",
   "scripts": {
-    "build:res": "rescript build",
-    "watch:res": "rescript build -w",
-    "build:wasm": "./scripts/build-wasm.sh",
-    "build:js": "webpack --mode=production",
-    "build": "npm run build:res && npm run build:js",
-    "dev": "npm run build:res && webpack --mode=development && web-ext run --source-dir dist",
-    "lint": "rescript build"
+    "setup": "deno install",
+    "build:res": "deno task build:res",
+    "watch:res": "deno task watch:res",
+    "build:wasm": "deno task build:wasm",
+    "build:js": "deno task build:js",
+    "build": "deno task build",
+    "dev": "deno task dev",
+    "lint": "deno task lint"
   },
   "dependencies": {
     "@rescript/react": "^0.13.1",

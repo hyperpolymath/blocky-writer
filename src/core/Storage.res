@@ -10,28 +10,35 @@ module Template = {
 
 let key = "blocky-writer:templates"
 
-let serialize = (templates: array<Template.t>): string =>
-  templates->Js.Json.stringifyAny->Belt.Option.getWithDefault("[]")
+@val
+external stringify: 'a => string = "JSON.stringify"
+
+@val
+external parse: string => 'a = "JSON.parse"
+
+@val
+external setItem: (string, string) => unit = "localStorage.setItem"
+
+@val
+external getItem: string => Js.Nullable.t<string> = "localStorage.getItem"
+
+let serialize = (templates: array<Template.t>): string => stringify(templates)
 
 let parseTemplates = (raw: string): array<Template.t> => {
-  switch Js.Json.parseExn(raw) {
-  | json =>
-    switch Js.Json.decodeArray(json) {
-    | Some(_) => [||]
-    | None => [||]
-    }
-  | exception _ => [||]
+  switch parse(raw) {
+  | templates => templates
+  | exception _ => []
   }
 }
 
 let saveTemplates = (templates: array<Template.t>): unit => {
   let payload = serialize(templates)
-  Webapi.Dom.window->Webapi.Dom.Window.localStorage->Webapi.Dom.Storage.setItem(key, payload)
+  setItem(key, payload)
 }
 
 let loadTemplates = (): array<Template.t> => {
-  switch Webapi.Dom.window->Webapi.Dom.Window.localStorage->Webapi.Dom.Storage.getItem(key) {
+  switch getItem(key)->Js.Nullable.toOption {
   | Some(raw) => parseTemplates(raw)
-  | None => [||]
+  | None => []
   }
 }

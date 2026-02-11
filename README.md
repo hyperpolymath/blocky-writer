@@ -18,28 +18,28 @@
 
 ## Quick start
 
-1. Install Node dependencies:
+1. Install dependencies (Deno-first):
 
 ```bash
-npm install
+deno install
 ```
 
 2. Build ReScript output and bundle extension assets:
 
 ```bash
-npm run build
+deno task build
 ```
 
 3. Build the Rust WASM package:
 
 ```bash
-npm run build:wasm
+deno task build:wasm
 ```
 
 4. Run the extension in Firefox via `web-ext`:
 
 ```bash
-npm run dev
+deno task dev
 ```
 
 ## Notes

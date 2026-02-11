@@ -20,7 +20,7 @@ let demoBlocks: array<PdfTool.block> = [
 let mount = () => {
   switch Webapi.Dom.document->Webapi.Dom.Document.querySelector("#root") {
   | Some(root) =>
-    ReactDOMClient.createRoot(root)->ReactDOMClient.Root.render(
+    ReactDOM.Client.createRoot(root)->ReactDOM.Client.Root.render(
       <FormFiller
         blocks={demoBlocks}
         onFill={fields => {

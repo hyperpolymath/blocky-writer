@@ -6,7 +6,8 @@ let make = (~blocks: array<PdfTool.block>, ~onFill: Js.Dict.t<string> => unit) =
 
   let handleChange = (label: string, value: string) => {
     setFields(prev => {
-      let next = Js.Dict.copy(prev)
+      let next = Js.Dict.empty()
+      prev->Js.Dict.entries->Belt.Array.forEach(((key, existingValue)) => Js.Dict.set(next, key, existingValue))
       Js.Dict.set(next, label, value)
       next
     })

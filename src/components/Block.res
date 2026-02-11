@@ -8,8 +8,8 @@ let make = (~label: string, ~value: string, ~onChange: string => unit) => {
     </label>
     <input
       type_="text"
-      value
-      onChange={ev => onChange(ReactEvent.Form.target(ev)##value)}
+      value={value}
+      onChange={ev => onChange(Js.Dict.unsafeGet(Obj.magic(ReactEvent.Form.target(ev)), "value"))}
       style={
         ReactDOM.Style.make(
           ~width="100%",

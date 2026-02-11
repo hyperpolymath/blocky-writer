@@ -8,6 +8,8 @@ type block = {
   height: float,
 }
 
+type arrayBuffer = Js.Typed_array.ArrayBuffer.t
+
 type wasmModule
 
 @module("../../rust/pdftool_core/pkg/pdftool_core.js")
@@ -21,10 +23,6 @@ external fillBlocksRaw: (wasmModule, arrayBuffer, array<block>, Js.Dict.t<string
 
 let detectBlocks = (pdfData: arrayBuffer): Js.Promise.t<array<block>> =>
   detectBlocksRaw(wasm, pdfData)
-  ->Js.Promise.catch(err => {
-    Js.log2("detectBlocks error", err)
-    Js.Promise.resolve([||])
-  })
 
 let fillBlocks = (
   pdfData: arrayBuffer,
@@ -32,7 +30,3 @@ let fillBlocks = (
   fields: Js.Dict.t<string>,
 ): Js.Promise.t<arrayBuffer> =>
   fillBlocksRaw(wasm, pdfData, blocks, fields)
-  ->Js.Promise.catch(err => {
-    Js.log2("fillBlocks error", err)
-    Js.Promise.resolve(ArrayBuffer.make(0))
-  })

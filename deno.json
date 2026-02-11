@@ -1,0 +1,14 @@
+{
+  "nodeModulesDir": "auto",
+  "tasks": {
+    "setup": "deno install",
+    "build:res": "deno run -A npm:rescript build",
+    "watch:res": "deno run -A npm:rescript build -w",
+    "build:wasm": "./scripts/build-wasm.sh",
+    "build:js": "deno run -A npm:webpack --mode=production",
+    "build:js:dev": "deno run -A npm:webpack --mode=development",
+    "build": "deno task build:res && deno task build:js",
+    "dev": "deno task build:res && deno task build:js:dev && deno run -A npm:web-ext run --source-dir dist",
+    "lint": "deno task build:res"
+  }
+}
