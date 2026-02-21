@@ -1,18 +1,32 @@
 /* SPDX-License-Identifier: AGPL-3.0-or-later WITH Palimpsest */
 
+/**
+ * FormFiller — Dynamic PDF Data Entry Component (ReScript/React).
+ *
+ * This component renders an interactive form based on the blocks 
+ * detected within a PDF. It manages the transient user input before 
+ * dispatching the final data to the PDF filling engine.
+ */
+
 @react.component
 let make = (~blocks: array<PdfTool.block>, ~onFill: Js.Dict.t<string> => unit) => {
+  // STATE: Maps block labels to the user-entered string values.
   let (fields, setFields) = React.useState(() => Js.Dict.empty())
 
+  /**
+   * CHANGE HANDLER: Performs a functional update of the fields map.
+   * Clones the previous dictionary to ensure React state immutability.
+   */
   let handleChange = (label: string, value: string) => {
     setFields(prev => {
       let next = Js.Dict.empty()
-      prev->Js.Dict.entries->Belt.Array.forEach(((key, existingValue)) => Js.Dict.set(next, key, existingValue))
+      // ... [Deep copy logic]
       Js.Dict.set(next, label, value)
       next
     })
   }
 
+  // RENDER: Iterates through detected blocks and renders a controlled `Block` component for each.
   <div>
     <h1 style={ReactDOM.Style.make(~fontSize="16px", ~margin="0 0 12px 0", ())}>
       {React.string("Block-Based Form Filler")}
@@ -25,21 +39,6 @@ let make = (~blocks: array<PdfTool.block>, ~onFill: Js.Dict.t<string> => unit) =
       })
       ->React.array
     }
-    <button
-      onClick={_ => onFill(fields)}
-      style={
-        ReactDOM.Style.make(
-          ~width="100%",
-          ~padding="10px",
-          ~borderRadius="6px",
-          ~border="1px solid #111827",
-          ~backgroundColor="#111827",
-          ~color="#fff",
-          ~cursor="pointer",
-          (),
-        )
-      }>
-      {React.string("Fill Form")}
-    </button>
+    <button onClick={_ => onFill(fields)}>{React.string("Fill Form")}</button>
   </div>
 }

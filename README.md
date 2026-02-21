@@ -63,3 +63,8 @@ deno task test:core-fill
 ```bash
 deno run -A npm:web-ext run --source-dir dist --firefox /usr/bin/firefox
 ```
+
+
+## Architecture
+
+See [TOPOLOGY.md](TOPOLOGY.md) for a visual architecture map and completion dashboard.

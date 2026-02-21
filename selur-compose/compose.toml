@@ -1,0 +1,45 @@
+# SPDX-License-Identifier: PMPL-1.0-or-later
+version = "1.0"
+
+# blocky-writer extension bundle served behind the Svalinn gateway
+[services.blocky-writer]
+image = "blocky-writer:ci"
+volumes = ["bundle:/app/dist"]
+environment = { MODE = "selur", BUNDLE_PATH = "/app/dist" }
+networks = ["selur"]
+depends_on = ["cerro-torre", "svalinn-gateway"]
+restart = "on-failure"
+
+# Svalinn serves as the edge gateway that authenticates and routes to the extension
+[services.svalinn-gateway]
+image = "ghcr.io/hyperpolymath/svalinn-gateway:latest.ctp"
+ports = ["8443:8443"]
+environment = { BACKEND = "http://blocky-writer:8090" }
+networks = ["selur"]
+depends_on = ["blocky-writer"]
+restart = "unless-stopped"
+
+# Vörðr provides attestation/state validation for the stack
+[services.vordr-verifier]
+image = "ghcr.io/hyperpolymath/vordr:latest.ctp"
+command = ["--policy", "selur-compose/blocky-writer-policy.toml"]
+networks = ["selur"]
+depends_on = ["cerro-torre"]
+restart = "on-failure"
+
+# Cerro Torre ensures the Chainguard bundle is signed and logged
+[services.cerro-torre]
+image = "ghcr.io/hyperpolymath/cerro-torre:latest.ctp"
+command = ["verify", "--watch", "/var/lib/cerro-torre/artifacts"]
+volumes = ["cerro-data:/var/lib/cerro-torre"]
+networks = ["selur"]
+restart = "on-failure"
+
+[volumes.bundle]
+driver = "local"
+
+[volumes.cerro-data]
+driver = "local"
+
+[networks.selur]
+driver = "selur"

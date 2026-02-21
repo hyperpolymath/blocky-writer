@@ -1,0 +1,4 @@
+node_modules
+dist
+pkg
+rust/pdftool_core/pkg
