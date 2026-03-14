@@ -8,7 +8,7 @@ Replace all {{PLACEHOLDER}} values with your information:
   language-bridges     - Your project name
   hyperpolymath            - GitHub username or org (e.g., hyperpolymath)
   language-bridges             - Repository name
-  jonathan.jewell@open.ac.uk   - Security contact email
+  j.d.a.jewell@open.ac.uk   - Security contact email
   TBD  - Your PGP key fingerprint (40 chars, no spaces)
   https://hyperpolymath.github.io/pgp.asc      - URL to your public PGP key
   https://hyperpolymath.github.io          - Your website/domain
@@ -40,7 +40,7 @@ We take security seriously. We appreciate your efforts to responsibly disclose v
 
 The preferred method for reporting security vulnerabilities is through GitHub's Security Advisory feature:
 
-1. Navigate to [Report a Vulnerability](https://github.com/hyperpolymath/language-bridges/security/advisories/new)
+1. Navigate to [Report a Vulnerability](https://github.com/hyperpolymath/blocky-writer/security/advisories/new)
 2. Click **"Report a vulnerability"**
 3. Complete the form with as much detail as possible
 4. Submit — we'll receive a private notification
@@ -58,7 +58,7 @@ If you cannot use GitHub Security Advisories, you may email us directly:
 
 | | |
 |---|---|
-| **Email** | jonathan.jewell@open.ac.uk |
+| **Email** | j.d.a.jewell@open.ac.uk |
 | **PGP Key** | [Download Public Key](https://hyperpolymath.github.io/pgp.asc) |
 | **Fingerprint** | `TBD` |
 
@@ -67,10 +67,10 @@ If you cannot use GitHub Security Advisories, you may email us directly:
 curl -sSL https://hyperpolymath.github.io/pgp.asc | gpg --import
 
 # Verify fingerprint
-gpg --fingerprint jonathan.jewell@open.ac.uk
+gpg --fingerprint j.d.a.jewell@open.ac.uk
 
 # Encrypt your report
-gpg --armor --encrypt --recipient jonathan.jewell@open.ac.uk report.txt
+gpg --armor --encrypt --recipient j.d.a.jewell@open.ac.uk report.txt
 ```
 
 > **⚠️ Important:** Do not report security vulnerabilities through public GitHub issues, pull requests, discussions, or social media.
@@ -203,7 +203,7 @@ If we cannot reach agreement on disclosure timing, we default to 90 days from yo
 
 The following are within scope for security research:
 
-- This repository (`hyperpolymath/language-bridges`) and all its code
+- This repository (`hyperpolymath/blocky-writer`) and all its code
 - Official releases and packages published from this repository
 - Documentation that could lead to security issues
 - Build and deployment configurations in this repository
@@ -322,7 +322,7 @@ Recognition includes:
 To stay informed about security updates:
 
 - **Watch this repository**: Click "Watch" → "Custom" → Select "Security alerts"
-- **GitHub Security Advisories**: Published at [Security Advisories](https://github.com/hyperpolymath/language-bridges/security/advisories)
+- **GitHub Security Advisories**: Published at [Security Advisories](https://github.com/hyperpolymath/blocky-writer/security/advisories)
 - **Release notes**: Security fixes noted in [CHANGELOG](CHANGELOG.md)
 
 ### Update Policy
@@ -371,7 +371,7 @@ When using language-bridges, we recommend:
 ## Additional Resources
 
 - [Our PGP Public Key](https://hyperpolymath.github.io/pgp.asc)
-- [Security Advisories](https://github.com/hyperpolymath/language-bridges/security/advisories)
+- [Security Advisories](https://github.com/hyperpolymath/blocky-writer/security/advisories)
 - [Changelog](CHANGELOG.md)
 - [Contributing Guidelines](CONTRIBUTING.md)
 - [CVE Database](https://cve.mitre.org/)
@@ -383,8 +383,8 @@ When using language-bridges, we recommend:
 
 | Purpose | Contact |
 |---------|---------|
-| **Security issues** | [Report via GitHub](https://github.com/hyperpolymath/language-bridges/security/advisories/new) or jonathan.jewell@open.ac.uk |
-| **General questions** | [GitHub Discussions](https://github.com/hyperpolymath/language-bridges/discussions) |
+| **Security issues** | [Report via GitHub](https://github.com/hyperpolymath/blocky-writer/security/advisories/new) or j.d.a.jewell@open.ac.uk |
+| **General questions** | [GitHub Discussions](https://github.com/hyperpolymath/blocky-writer/discussions) |
 | **Other enquiries** | See [README](README.md) for contact information |
 
 ---

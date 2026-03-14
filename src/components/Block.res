@@ -1,4 +1,4 @@
-/* SPDX-License-Identifier: AGPL-3.0-or-later WITH Palimpsest */
+/* SPDX-License-Identifier: PMPL-1.0-or-later */
 
 @react.component
 let make = (~label: string, ~value: string, ~onChange: string => unit) => {

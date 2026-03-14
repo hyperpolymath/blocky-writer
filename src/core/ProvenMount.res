@@ -1,4 +1,4 @@
-/* SPDX-License-Identifier: AGPL-3.0-or-later WITH Palimpsest */
+/* SPDX-License-Identifier: PMPL-1.0-or-later */
 /* ABI validation is consumed directly from generated artifact:
    /mnt/eclipse/repos/rescript-ecosystem/packages/web/dom-mounter/src/SafeDOM.res.js
    FFI stays local. */

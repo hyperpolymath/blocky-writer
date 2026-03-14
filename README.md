@@ -52,7 +52,7 @@ deno task test:core-fill
 
 - Rust `fill_blocks` now performs AcroForm-aware writeback for text/select and button widgets, and emits structured taxonomy errors (`code`, `message`, `context`).
 - Popup/background/content surfaces preserve taxonomy codes from the Rust WASM boundary.
-- Source files include SPDX headers targeting AGPL + Palimpsest exception.
+- Source files include SPDX headers targeting PMPL-1.0-or-later.
 
 ## Firefox troubleshooting
 
