@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: PMPL-1.0-or-later WITH Palimpsest
 
+#![forbid(unsafe_code)]
 use std::collections::{HashMap, HashSet};
 
 use lopdf::{Dictionary, Document, Object, ObjectId};
