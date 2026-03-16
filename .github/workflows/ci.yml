@@ -20,7 +20,7 @@ npermissions: read-all
           deno-version: v2.x
 npermissions: read-all
 
-      - uses: dtolnay/rust-toolchain@stable
+      - uses: dtolnay/rust-toolchain@4be9e76fd7c4901c61fb841f559994984270fce7 # stable
       - run: deno task test:core-fill
 
   extension-build:
@@ -34,7 +34,7 @@ npermissions: read-all
           deno-version: v2.x
 npermissions: read-all
 
-      - uses: dtolnay/rust-toolchain@stable
+      - uses: dtolnay/rust-toolchain@4be9e76fd7c4901c61fb841f559994984270fce7 # stable
       - uses: jetli/wasm-pack-action@v0.4.0
         with:
           version: "latest"
