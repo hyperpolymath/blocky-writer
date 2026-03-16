@@ -1,0 +1,26 @@
+# SPDX-License-Identifier: PMPL-1.0-or-later
+# Clade declaration — part of the gv-clade-index registry
+# See: https://github.com/hyperpolymath/gv-clade-index
+
+[identity]
+uuid = "3cece854-4969-5646-8d3a-bfbed895867b"
+primary-forge = "github"
+primary-owner = "hyperpolymath"
+canonical-name = "blocky-writer"
+prefixed-name = "ap-blocky-writer"
+
+[clade]
+primary = "ap"
+secondary = []
+assigned = "2026-03-16"
+rationale = ""
+
+[forges]
+github = "hyperpolymath/blocky-writer"
+gitlab = "hyperpolymath/blocky-writer"
+bitbucket = "hyperpolymath/blocky-writer"
+
+[lineage]
+type = "standalone"
+parent = "Block-based writing tool"
+born = "2026-03-16"
