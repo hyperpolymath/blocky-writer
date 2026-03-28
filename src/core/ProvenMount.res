@@ -1,6 +1,6 @@
 /* SPDX-License-Identifier: PMPL-1.0-or-later */
 /* ABI validation is consumed directly from generated artifact:
-   /mnt/eclipse/repos/rescript-ecosystem/packages/web/dom-mounter/src/SafeDOM.res.js
+   $REPOS_DIR/rescript-ecosystem/packages/web/dom-mounter/src/SafeDOM.res.js
    FFI stays local. */
 
 type mountResult =
