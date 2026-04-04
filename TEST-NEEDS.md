@@ -8,11 +8,12 @@
 |----------|-------|-------|
 | Test directories | 1 | Location(s): /tests |
 | CI workflows | 15 | Running tests on GitHub Actions |
-COVERAGE_TABLE
+| Unit tests | Configured | ReScript Jest/Vitest setup |
 
 ## What's Covered
 
-COVERAGE_ITEMS
+- [x] ReScript unit tests
+- [x] JavaScript interop tests
 
 ## Still Missing (for CRG B+)
 
@@ -24,5 +25,5 @@ COVERAGE_ITEMS
 ## Run Tests
 
 ```bash
-npm run test  # or: rescript build TEST_COMMANDTEST_COMMAND npm run test
+npm run test  # or: rescript build && npm run test
 ```
