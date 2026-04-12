@@ -1,0 +1,87 @@
+// SPDX-License-Identifier: PMPL-1.0-or-later
+// SPDX-FileCopyrightText: 2026 Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>
+
+= blocky-writer
+:toc: preamble
+:icons: font
+
+`blocky-writer` is a Mozilla Firefox extension for block-based PDF form filling.
+
+== Stack
+
+* Extension UI: ReScript + React
+* Background/content scripts: ReScript
+* Core processing: Rust compiled to WebAssembly (WASM)
+* Local storage: IndexedDB
+
+== Repo Layout
+
+* `src/` — ReScript sources for popup UI, background script, content script, and core modules
+* `public/` — static extension files (`manifest.json`, popup HTML, icons)
+* `rust/pdftool_core/` — Rust WASM crate for block detection and PDF operations
+* `scripts/` — build helpers for WASM and extension bundles
+
+== Quick Start
+
+. Install dependencies (Deno-first):
++
+[source,bash]
+----
+deno install
+----
+
+. Build ReScript output and bundle extension assets:
++
+[source,bash]
+----
+deno task build
+----
+
+. Build the Rust WASM package:
++
+[source,bash]
+----
+deno task build:wasm
+----
+
+. Run the extension in Firefox via `web-ext`:
++
+[source,bash]
+----
+deno task dev
+----
+
+. Run core fill fixture tests (error taxonomy + AcroForm writeback):
++
+[source,bash]
+----
+deno task test:core-fill
+----
+
+== Notes
+
+* Rust `fill_blocks` now performs AcroForm-aware writeback for text/select and button widgets, and emits structured taxonomy errors (`code`, `message`, `context`).
+* Popup/background/content surfaces preserve taxonomy codes from the Rust WASM boundary.
+* Source files include SPDX headers targeting PMPL-1.0-or-later.
+
+== Firefox Troubleshooting
+
+* If `deno task dev` fails with `ECONNREFUSED 127.0.0.1:<port>`, verify Firefox is installed and runnable.
+* Close stale Firefox instances launched by prior `web-ext` sessions, then retry `deno task dev`.
+* You can run `web-ext` directly with an explicit binary when needed:
++
+[source,bash]
+----
+deno run -A npm:web-ext run --source-dir dist --firefox /usr/bin/firefox
+----
+
+== Architecture
+
+See link:TOPOLOGY.md[TOPOLOGY.md] for a visual architecture map and completion dashboard.
+
+Wondering how this works? See link:EXPLAINME.adoc[].
+
+== License
+
+SPDX-License-Identifier: PMPL-1.0-or-later +
+See link:LICENSE[LICENSE].
