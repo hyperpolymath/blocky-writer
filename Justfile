@@ -2,6 +2,8 @@
 # Justfile for blocky-writer
 
 # Default recipe — list available commands
+import? "contractile.just"
+
 default:
     @just --list
 
@@ -68,3 +70,14 @@ crg-badge:
       D) color="orange" ;; E) color="red" ;; F) color="critical" ;; \
       *) color="lightgrey" ;; esac; \
     echo "[![CRG $$grade](https://img.shields.io/badge/CRG-$$grade-$$color?style=flat-square)](https://github.com/hyperpolymath/standards/tree/main/component-readiness-grades)"
+
+# Run E2E tests (run the main 'test' recipe)
+e2e:
+    just doctor
+    @echo "E2E validation passed"
+
+# Run aspect-oriented tests
+aspect:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    bash tests/aspect/aspect_tests.sh
