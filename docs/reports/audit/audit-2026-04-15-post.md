@@ -1,0 +1,224 @@
+# POST-audit status report
+Repo: blocky-writer
+Actions taken:
+- Added TS blocker workflow
+- Added NPM/Bun blocker workflow
+- Managed lockfiles
+- Synced repo (Dependabot, .scm, Justfile)
+Remaining findings: {
+  "program_path": ".",
+  "language": "rescript",
+  "frameworks": [],
+  "weak_points": [
+    {
+      "category": "SupplyChain",
+      "location": "flake.nix",
+      "file": "flake.nix",
+      "severity": "High",
+      "description": "flake.nix declares inputs without narHash, rev pinning, or sibling flake.lock — dependency revision is unpinned in flake.nix",
+      "recommended_attack": []
+    }
+  ],
+  "statistics": {
+    "total_lines": 1634,
+    "unsafe_blocks": 0,
+    "panic_sites": 0,
+    "unwrap_calls": 4,
+    "allocation_sites": 6,
+    "io_operations": 3,
+    "threading_constructs": 0
+  },
+  "file_statistics": [
+    {
+      "file_path": "src/background.res",
+      "lines": 61,
+      "unsafe_blocks": 0,
+      "panic_sites": 0,
+      "unwrap_calls": 0,
+      "allocation_sites": 0,
+      "io_operations": 1,
+      "threading_constructs": 0
+    },
+    {
+      "file_path": "rust/pdftool_core/src/lib.rs",
+      "lines": 943,
+      "unsafe_blocks": 0,
+      "panic_sites": 0,
+      "unwrap_calls": 4,
+      "allocation_sites": 6,
+      "io_operations": 0,
+      "threading_constructs": 0
+    },
+    {
+      "file_path": "flake.nix",
+      "lines": 116,
+      "unsafe_blocks": 0,
+      "panic_sites": 0,
+      "unwrap_calls": 0,
+      "allocation_sites": 0,
+      "io_operations": 2,
+      "threading_constructs": 0
+    }
+  ],
+  "recommended_attacks": [
+    "cpu"
+  ],
+  "dependency_graph": {
+    "edges": []
+  },
+  "taint_matrix": {
+    "rows": []
+  },
+  "migration_metrics": {
+    "deprecated_api_count": 35,
+    "modern_api_count": 26,
+    "api_migration_ratio": 0.4262295081967213,
+    "health_score": 0.61,
+    "config_format": "RescriptJson",
+    "version_bracket": "V12Stable",
+    "file_count": 8,
+    "rescript_lines": 436,
+    "deprecated_patterns": [
+      {
+        "pattern": "Js.Dict.",
+        "replacement": "Dict",
+        "file_path": "src/components/Block.res",
+        "line_number": 0,
+        "category": "OldDict",
+        "count": 1
+      },
+      {
+        "pattern": "ReactDOMStyle.make / ReactDOM.Style.make",
+        "replacement": "inline record style={{...}}",
+        "file_path": "src/components/Block.res",
+        "line_number": 0,
+        "category": "OldReactStyle",
+        "count": 3
+      },
+      {
+        "pattern": "Js.Dict.",
+        "replacement": "Dict",
+        "file_path": "src/components/FormFiller.res",
+        "line_number": 0,
+        "category": "OldDict",
+        "count": 5
+      },
+      {
+        "pattern": "Belt.Array",
+        "replacement": "Array",
+        "file_path": "src/components/FormFiller.res",
+        "line_number": 0,
+        "category": "BeltApi",
+        "count": 1
+      },
+      {
+        "pattern": "Belt.Option",
+        "replacement": "Option",
+        "file_path": "src/components/FormFiller.res",
+        "line_number": 0,
+        "category": "BeltApi",
+        "count": 1
+      },
+      {
+        "pattern": "ReactDOMStyle.make / ReactDOM.Style.make",
+        "replacement": "inline record style={{...}}",
+        "file_path": "src/components/FormFiller.res",
+        "line_number": 0,
+        "category": "OldReactStyle",
+        "count": 1
+      },
+      {
+        "pattern": "Js.Dict.",
+        "replacement": "Dict",
+        "file_path": "src/core/PdfTool.res",
+        "line_number": 0,
+        "category": "OldDict",
+        "count": 1
+      },
+      {
+        "pattern": "Js.Promise.",
+        "replacement": "Promise",
+        "file_path": "src/core/PdfTool.res",
+        "line_number": 0,
+        "category": "OldPromise",
+        "count": 4
+      },
+      {
+        "pattern": "Js.Nullable.",
+        "replacement": "Nullable",
+        "file_path": "src/core/Storage.res",
+        "line_number": 0,
+        "category": "OldNullable",
+        "count": 2
+      },
+      {
+        "pattern": "Js.log",
+        "replacement": "Console.log",
+        "file_path": "src/background.res",
+        "line_number": 0,
+        "category": "OldConsole",
+        "count": 1
+      },
+      {
+        "pattern": "Js.log2",
+        "replacement": "Console.log2",
+        "file_path": "src/background.res",
+        "line_number": 0,
+        "category": "OldConsole",
+        "count": 1
+      },
+      {
+        "pattern": "Js.Promise.",
+        "replacement": "Promise",
+        "file_path": "src/background.res",
+        "line_number": 0,
+        "category": "OldPromise",
+        "count": 5
+      },
+      {
+        "pattern": "Js.Json.",
+        "replacement": "JSON",
+        "file_path": "src/background.res",
+        "line_number": 0,
+        "category": "OldJson",
+        "count": 4
+      },
+      {
+        "pattern": "Js.Promise.",
+        "replacement": "Promise",
+        "file_path": "src/content.res",
+        "line_number": 0,
+        "category": "OldPromise",
+        "count": 1
+      },
+      {
+        "pattern": "Js.Json.",
+        "replacement": "JSON",
+        "file_path": "src/content.res",
+        "line_number": 0,
+        "category": "OldJson",
+        "count": 2
+      },
+      {
+        "pattern": "Js.Dict.",
+        "replacement": "Dict",
+        "file_path": "src/popup.res",
+        "line_number": 0,
+        "category": "OldDict",
+        "count": 1
+      },
+      {
+        "pattern": "Js.Promise.",
+        "replacement": "Promise",
+        "file_path": "src/popup.res",
+        "line_number": 0,
+        "category": "OldPromise",
+        "count": 1
+      }
+    ],
+    "jsx_version": 4,
+    "uncurried": false,
+    "module_format": "esmodule"
+  }
+}
+CRG Grade: D
