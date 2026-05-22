@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: PMPL-1.0-or-later WITH Palimpsest
+// SPDX-License-Identifier: MPL-2.0 WITH Palimpsest
 
 #![forbid(unsafe_code)]
 use std::collections::{HashMap, HashSet};
