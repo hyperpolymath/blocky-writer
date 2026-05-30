@@ -82,3 +82,11 @@ htmlcov/
 
 # wokelangiser generated i18n locale files (too large for GitHub)
 generated/wokelangiser/i18n/
+
+# npm-avoidant (standards#67)
+package-lock.json
+**/package-lock.json
+bun.lockb
+yarn.lock
+pnpm-lock.yaml
+.npmrc
