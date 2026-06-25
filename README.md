@@ -1,89 +1,107 @@
-[![Sponsor](https://img.shields.io/badge/Sponsor-%E2%9D%A4-pink?logo=github)](https://github.com/sponsors/hyperpolymath)
+<!--
+SPDX-License-Identifier: CC-BY-SA-4.0
+SPDX-FileCopyrightText: 2025-2026 Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>
+-->
 
-// SPDX-License-Identifier: CC-BY-SA-4.0
-// SPDX-FileCopyrightText: 2026 Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>
+`blocky-writer` is a Mozilla Firefox extension for block-based PDF form
+filling.
 
-= blocky-writer
-:toc: preamble
-:icons: font
+# Stack
 
-`blocky-writer` is a Mozilla Firefox extension for block-based PDF form filling.
+- Extension UI: ReScript + React
 
-== Stack
+- Background/content scripts: ReScript
 
-* Extension UI: ReScript + React
-* Background/content scripts: ReScript
-* Core processing: Rust compiled to WebAssembly (WASM)
-* Local storage: IndexedDB
+- Core processing: Rust compiled to WebAssembly (WASM)
 
-== Repo Layout
+- Local storage: IndexedDB
 
-* `src/` — ReScript sources for popup UI, background script, content script, and core modules
-* `public/` — static extension files (`manifest.json`, popup HTML, icons)
-* `rust/pdftool_core/` — Rust WASM crate for block detection and PDF operations
-* `scripts/` — build helpers for WASM and extension bundles
+# Repo Layout
 
-== Quick Start
+- `src/` — ReScript sources for popup UI, background script, content
+  script, and core modules
 
-. Install dependencies (Deno-first):
-+
-[source,bash]
-----
-deno install
-----
+- `public/` — static extension files (`manifest.json`, popup HTML,
+  icons)
 
-. Build ReScript output and bundle extension assets:
-+
-[source,bash]
-----
-deno task build
-----
+- `rust/pdftool_core/` — Rust WASM crate for block detection and PDF
+  operations
 
-. Build the Rust WASM package:
-+
-[source,bash]
-----
-deno task build:wasm
-----
+- `scripts/` — build helpers for WASM and extension bundles
 
-. Run the extension in Firefox via `web-ext`:
-+
-[source,bash]
-----
-deno task dev
-----
+# Quick Start
 
-. Run core fill fixture tests (error taxonomy + AcroForm writeback):
-+
-[source,bash]
-----
-deno task test:core-fill
-----
+1.  Install dependencies (Deno-first):
 
-== Notes
+    ``` bash
+    deno install
+    ```
 
-* Rust `fill_blocks` now performs AcroForm-aware writeback for text/select and button widgets, and emits structured taxonomy errors (`code`, `message`, `context`).
-* Popup/background/content surfaces preserve taxonomy codes from the Rust WASM boundary.
-* Source files include SPDX headers targeting MPL-2.0.
+<!-- -->
 
-== Firefox Troubleshooting
+1.  Build ReScript output and bundle extension assets:
 
-* If `deno task dev` fails with `ECONNREFUSED 127.0.0.1:<port>`, verify Firefox is installed and runnable.
-* Close stale Firefox instances launched by prior `web-ext` sessions, then retry `deno task dev`.
-* You can run `web-ext` directly with an explicit binary when needed:
-+
-[source,bash]
-----
-deno run -A npm:web-ext run --source-dir dist --firefox /usr/bin/firefox
-----
+    ``` bash
+    deno task build
+    ```
 
-== Architecture
+<!-- -->
 
-See link:TOPOLOGY.md[TOPOLOGY.md] for a visual architecture map and completion dashboard.
+1.  Build the Rust WASM package:
 
-Wondering how this works? See link:EXPLAINME.adoc[].
+    ``` bash
+    deno task build:wasm
+    ```
 
-== License
+<!-- -->
 
-SPDX-License-Identifier: CC-BY-SA-4.0 +
-See link:LICENSE[LICENSE].
+1.  Run the extension in Firefox via `web-ext`:
+
+    ``` bash
+    deno task dev
+    ```
+
+<!-- -->
+
+1.  Run core fill fixture tests (error taxonomy + AcroForm writeback):
+
+    ``` bash
+    deno task test:core-fill
+    ```
+
+# Notes
+
+- Rust `fill_blocks` now performs AcroForm-aware writeback for
+  text/select and button widgets, and emits structured taxonomy errors
+  (`code`, `message`, `context`).
+
+- Popup/background/content surfaces preserve taxonomy codes from the
+  Rust WASM boundary.
+
+- Source files include SPDX headers targeting MPL-2.0.
+
+# Firefox Troubleshooting
+
+- If `deno` `task` `dev` fails with `ECONNREFUSED` `127.0.0.1:<port>`,
+  verify Firefox is installed and runnable.
+
+- Close stale Firefox instances launched by prior `web-ext` sessions,
+  then retry `deno` `task` `dev`.
+
+- You can run `web-ext` directly with an explicit binary when needed:
+
+  ``` bash
+  deno run -A npm:web-ext run --source-dir dist --firefox /usr/bin/firefox
+  ```
+
+# Architecture
+
+See <a href="TOPOLOGY.md" class="md">TOPOLOGY</a> for a visual
+architecture map and completion dashboard.
+
+Wondering how this works? See [EXPLAINME.adoc](EXPLAINME.adoc).
+
+# License
+
+SPDX-License-Identifier: CC-BY-SA-4.0\
+See [LICENSE](LICENSE).
