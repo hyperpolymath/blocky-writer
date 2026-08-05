@@ -17,3 +17,20 @@ AI manifest for blocky-writer. Read this file first before any other work.
 ;; - No believe_me, assert_total, sorry, Admitted, unsafeCoerce, Obj.magic
 ;; - SCM files ONLY in .machine_readable/ (never root)
 ;; - Author: Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>
+
+<!-- BEGIN requires-initialisation -->
+
+## PRIORITY ACTION — this repository is not fully initialised
+
+10 substitution token(s) still have no value. **Read
+`REQUIRES_INITIALISATION.md` in the repository root before doing anything
+else here** — it lists every outstanding token, what it means, and which
+files it belongs in.
+
+Do not fabricate values for them, and do not delete the sections that
+contain them to quiet a gate. They are unfilled because they need a
+decision, not because they were overlooked. Resolve what you legitimately
+can, leave the rest, and delete `REQUIRES_INITIALISATION.md` only when
+nothing outstanding remains.
+
+<!-- END requires-initialisation -->
