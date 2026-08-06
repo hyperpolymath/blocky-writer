@@ -5,8 +5,6 @@ permissions:
   contents: read
 
 on:
-npermissions:
-  contents: read
 
   push:
     branches: ["main"]
@@ -15,39 +13,29 @@ npermissions:
 jobs:
   core-fill-tests:
     runs-on: ubuntu-latest
-npermissions:
-  contents: read
 
     steps:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8
       - uses: denoland/setup-deno@667a34cdef165d8d2b2e98dde39547c9daac7282 # v2
         with:
           deno-version: v2.x
-npermissions:
-  contents: read
 
       - uses: dtolnay/rust-toolchain@4be9e76fd7c4901c61fb841f559994984270fce7 # stable
       - run: deno task test:core-fill
 
   extension-build:
     runs-on: ubuntu-latest
-npermissions:
-  contents: read
 
     steps:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8
       - uses: denoland/setup-deno@667a34cdef165d8d2b2e98dde39547c9daac7282 # v2
         with:
           deno-version: v2.x
-npermissions:
-  contents: read
 
       - uses: dtolnay/rust-toolchain@4be9e76fd7c4901c61fb841f559994984270fce7 # stable
       - uses: jetli/wasm-pack-action@0d096b08b4e5a7de8c28de67e11e945404e9eefa # v0.4.0
         with:
           version: "latest"
-npermissions:
-  contents: read
 
       - run: deno task build:wasm
       - run: deno task build
