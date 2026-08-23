@@ -8,9 +8,9 @@ filling.
 
 # Stack
 
-- Extension UI: ReScript + React
+- Extension UI: AffineScript + React
 
-- Background/content scripts: ReScript
+- Background/content scripts: AffineScript
 
 - Core processing: Rust compiled to WebAssembly (WASM)
 
@@ -18,7 +18,7 @@ filling.
 
 # Repo Layout
 
-- `src/` — ReScript sources for popup UI, background script, content
+- `src/` — AffineScript sources for popup UI, background script, content
   script, and core modules
 
 - `public/` — static extension files (`manifest.json`, popup HTML,
@@ -39,7 +39,7 @@ filling.
 
 <!-- -->
 
-1.  Build ReScript output and bundle extension assets:
+1.  Build AffineScript output and bundle extension assets:
 
     ``` bash
     deno task build

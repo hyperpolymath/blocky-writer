@@ -2,8 +2,8 @@
   "nodeModulesDir": "auto",
   "tasks": {
     "setup": "deno install",
-    "build:res": "deno run -A npm:rescript build",
-    "watch:res": "deno run -A npm:rescript build -w",
+    "build:res": "deno run -A npm:affinescript build",
+    "watch:res": "deno run -A npm:affinescript build -w",
     "build:wasm": "./scripts/build-wasm.sh",
     "build:js": "deno run -A npm:webpack --mode=production",
     "build:js:dev": "deno run -A npm:webpack --mode=development",

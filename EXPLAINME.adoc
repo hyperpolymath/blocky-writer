@@ -17,7 +17,7 @@ ____
 | Technology | Learn More
 
 | **Deno** | https://deno.land
-| **ReScript** | https://rescript-lang.org
+| **AffineScript** | https://affinescript-lang.org
 |===
 
 == File Map

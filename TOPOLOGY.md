@@ -15,7 +15,7 @@
                                             ▼
                         ┌─────────────────────────────────────────┐
                         │           EXTENSION UI LAYER            │
-                        │    (ReScript + React + Office.js)       │
+                        │    (AffineScript + React + Office.js)       │
                         │  ┌───────────┐  ┌───────────────────┐  │
                         │  │ Popup UI  │  │  Content Script   │  │
                         │  └─────┬─────┘  └────────┬──────────┘  │
@@ -24,7 +24,7 @@
                                  ▼                 ▼
                         ┌─────────────────────────────────────────┐
                         │           BACKGROUND SERVICE            │
-                        │      (ReScript, State Management)       │
+                        │      (AffineScript, State Management)       │
                         └───────────────────┬─────────────────────┘
                                             │
                                             ▼
@@ -52,7 +52,7 @@
 COMPONENT                          STATUS              NOTES
 ─────────────────────────────────  ──────────────────  ─────────────────────────────────
 EXTENSION LAYERS
-  Popup UI (ReScript/React)         ██████████ 100%    Stateful forms stable
+  Popup UI (AffineScript/React)         ██████████ 100%    Stateful forms stable
   Background Script                 ██████████ 100%    WASM bridge active
   Content Script                    ████████░░  80%    PDF block detection refining
 
@@ -74,7 +74,7 @@ OVERALL:                            █████████░  ~90%   Produ
 
 ```
 Block Detection ───► AcroForm Parser ───► WASM Bridge ───► Extension UI
-      (Rust)              (Rust)             (JS)           (ReScript)
+      (Rust)              (Rust)             (JS)           (AffineScript)
 ```
 
 ## Update Protocol
