@@ -1,0 +1,70 @@
+== Changelog
+
+All notable changes to `+blocky-writer+` will be documented in this
+file.
+
+This file is generated from conventional commits by the
+https://github.com/hyperpolymath/standards/blob/main/.github/workflows/changelog-reusable.yml[`+changelog-reusable.yml+`]
+workflow (`+hyperpolymath/standards#206+`). Adopt the workflow in this
+repo’s CI to keep this file in sync automatically — see
+https://github.com/hyperpolymath/standards/blob/main/templates/cliff.toml[`+templates/cliff.toml+`]
+for the canonical config.
+
+The format follows https://keepachangelog.com/en/1.1.0/[Keep a
+Changelog]; this project aims to follow
+https://semver.org/spec/v2.0.0.html[Semantic Versioning].
+
+=== [Unreleased]
+
+==== Added
+
+* feat(crg): add crg-grade and crg-badge justfile recipes
+* feat: add wokelangiser accessibility+consent manifest
+* feat: add UX Justfile with doctor, tour, help-me, assail recipes
+* feat: add stapeln.toml layer-based container definitionfrom existing
+Containerfile to stapeln format.Chainguard base, security hardening,
+SBOM generation.-Authored-By: Claude Opus 4.6 (1M context)
+noreply@anthropic.com
+* feat: deploy UX Manifesto infrastructure
+* feat: add CLADE.a2ml — clade taxonomy declaration
+* feat: add mirror.yml workflow for GitLab/Bitbucket mirroring
+
+==== Fixed
+
+* fix(ci): sync hypatia-scan.yml to canonical (#5)
+* fix(ci): adopt canonical hypatia-scan.yml (#4)
+* fix(scorecard): enforce granular permissions and add fuzzing
+placeholder
+* fix(ci): Resolve workflow-linter self-matching and metadata issues
+* fix: SPDX headers (AGPL→PMPL), email, author name
+* fix(license): SPDX AGPL-3.0 → PMPL-1.0-or-later in dotfiles
+* fix: security hardening and CI workflow pinning
+
+==== Changed
+
+* refactor: migrate 6SCM → 6A2 (.scm → .a2ml format)
+
+==== Documentation
+
+* docs: add TEST-NEEDS.md (CRG C)
+* docs: add TEST-NEEDS.md (CRG C)
+* docs: restore README.md lost in Floor Raise campaign
+* docs: add EXPLAINME.adoc — prove-it file backing README claims
+* docs: add 0-AI-MANIFEST.a2ml (RSR compliance)
+
+==== CI
+
+* ci: deploy dogfood-gate, fix hypatia-scan, add pre-commit hooks
+* ci: migrate CodeQL Action v3 → v4
+* ci: update SHA pins for codeql-action and trufflehog
+* ci: deploy missing standard workflows (10 added)
+
+=== Pre-history
+
+Prior commits to this file’s introduction are recorded in git history
+but not formally classified into Keep-a-Changelog sections. To backfill,
+run `+git cliff -o CHANGELOG.md+` locally using the canonical
+https://github.com/hyperpolymath/standards/blob/main/templates/cliff.toml[`+cliff.toml+`]
+— this is one-shot mechanical work.
+
+'''''
