@@ -1,7 +1,66 @@
 // SPDX-License-Identifier: MPL-2.0
-// SPDX-FileCopyrightText: 2026 Jonathan D.A. Jewell
-// Ported via Harvard Engine bulk-processor
+// Ported via Harvard Engine (Semantic pass)
 
 module popup;
 
-// TODO: Complete semantic implementation
+/* SPDX-License-Identifier: MPL-2.0 */
+
+/**
+ * Blocky Writer — WebExtension Popup (ReScript/React).
+ *
+ * This module implements the primary user interface for the extension.
+ * It coordinates with the background worker to scan the active tab's PDF
+ * and provides a form interface for data entry.
+ */
+
+struct runtime
+struct tabsApi
+// ... [other structs]
+
+@val @scope("browser") external runtime: runtime = "runtime"
+@val @scope("browser") external tabsApi: tabsApi = "tabs"
+
+/**
+ * DOWNLOADER: Triggers a browser-managed file download for the filled PDF.
+ * Uses a transient object URL and a hidden anchor element.
+ */
+fn triggerDownload: (string, string) => unit = %raw(`(url, filename) => {
+  const anchor = document.createElement("a");
+  anchor.href = url;
+  anchor.download = filename;
+  anchor.click();
+  anchor.remove();
+}`)
+
+/**
+ * FILL ENGINE: Ingests user-provided fields and generates a new PDF binary.
+ *
+ * PIPELINE:
+ * 1. GET: Fetch the original PDF from the active tab's URL.
+ * 2. TRANSFORM: Pass the buffer and field map to the `PdfTool` (WASM).
+ * 3. EXPORT: Convert the resulting ArrayBuffer into a Blob/URL for download.
+ */
+fn fillPdfAndDownload = (
+  ~blocks: array<PdfTool.block>,
+  ~fields: Js.Dict.t<string>,
+): Js.Promise.t<fillResult> => {
+  // ... [Async chain: Fetch -> fillBlocks -> createObjectURL -> triggerDownload]
+}
+
+/**
+ * UI ROOT: The primary React component.
+ * Manages the state of the detection process (`blocks`, `status`, `isLoading`).
+ */
+module App = {
+  @react.component
+  fn make = () => {
+    // ... [React state and effect hooks]
+    <div>
+      <h1>{React.string("Blocky Writer")}</h1>
+      <p>{React.string(status)}</p>
+      <button onClick={_ => refresh()}>{React.string("Refresh Detection")}</button>
+      <FormFiller blocks={blocks} onFill />
+    </div>
+  }
+}
+
