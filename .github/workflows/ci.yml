@@ -1,5 +1,6 @@
 # SPDX-License-Identifier: MPL-2.0
 # This workflow is managed by gh actions-lock.
+# This workflow is managed by gh actions-lock.
 name: CI
 permissions:
   actions: read
@@ -21,7 +22,7 @@ jobs:
         with:
           deno-version: v2.x
 
-      - uses: dtolnay/rust-toolchain@4be9e76fd7c4901c61fb841f559994984270fce7 # stable
+      - uses: dtolnay/rust-toolchain@v1
       - run: deno task test:core-fill
 
   extension-build:
@@ -33,7 +34,7 @@ jobs:
         with:
           deno-version: v2.x
 
-      - uses: dtolnay/rust-toolchain@4be9e76fd7c4901c61fb841f559994984270fce7 # stable
+      - uses: dtolnay/rust-toolchain@v1
       - uses: jetli/wasm-pack-action@v0.4.0
         with:
           version: "latest"
