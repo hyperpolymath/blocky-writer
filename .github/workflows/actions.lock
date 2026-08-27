@@ -12,7 +12,11 @@ workflows:
         - 'actions/deploy-pages@v5.0.0'
         - 'actions/upload-pages-artifact@v5.0.0'
         - 'haskell-actions/setup@v2.12.0'
-    '.github/workflows/ci.yml': []
+    '.github/workflows/ci.yml':
+        - 'actions/checkout@v7.0.1'
+        - 'denoland/setup-deno@v2.0.5'
+        - 'dtolnay/rust-toolchain@v1'
+        - 'jetli/wasm-pack-action@v0.4.0'
     '.github/workflows/codeql.yml':
         - 'actions/checkout@v7.0.1'
         - 'github/codeql-action@v4.37.7'
@@ -81,6 +85,16 @@ dependencies:
         commit: 'sha1-0bbdab096651ee93f37ec02383e088183d41ff0b'
         owner_id: 9713907
         repo_id: 222439721
+    'denoland/setup-deno@v2.0.5':
+        ref: 'v2.0.5'
+        commit: 'sha1-22d081ff2d3a40755e97629de92e3bcbfa7cf2ed'
+        owner_id: 42048915
+        repo_id: 356423100
+    'dtolnay/rust-toolchain@v1':
+        ref: 'v1'
+        commit: 'sha1-6c977a6ca4077a0ceb28ffbe03f59d46e9ac8772'
+        owner_id: 1940490
+        repo_id: 260749683
     'erlef/setup-beam@v1.24.1':
         ref: 'v1.24.1'
         commit: 'sha1-54075bcc5e249e4758d363f27d099f55d843f124'
@@ -96,6 +110,11 @@ dependencies:
         commit: 'sha1-6037f33647c3f17758a2356c80fc4a53d7e0685d'
         owner_id: 75048950
         repo_id: 623796603
+    'jetli/wasm-pack-action@v0.4.0':
+        ref: 'v0.4.0'
+        commit: 'sha1-0d096b08b4e5a7de8c28de67e11e945404e9eefa'
+        owner_id: 1142758
+        repo_id: 244578171
     'peter-evans/repository-dispatch@v4.0.1':
         ref: 'v4.0.1'
         commit: 'sha1-28959ce8df70de7be546dd1250a005dd32156697'
