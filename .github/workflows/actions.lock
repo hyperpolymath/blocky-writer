@@ -37,7 +37,7 @@ workflows:
         - 'actions/deploy-pages@v5.0.0'
         - 'actions/upload-pages-artifact@v5.0.0'
     '.github/workflows/push-email-notify.yml':
-        - 'dawidd6/action-send-mail@v3.12.0'
+        - 'hyperpolymath/smtp-notify-action@v0.1.0'
     '.github/workflows/secret-scanner.yml': []
 dependencies:
     'actions/cache@v6.1.0':
@@ -82,11 +82,6 @@ dependencies:
         repo_id: 496012378
         uses:
             - 'actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f'
-    'dawidd6/action-send-mail@v3.12.0':
-        ref: 'v3.12.0'
-        commit: 'sha1-0bbdab096651ee93f37ec02383e088183d41ff0b'
-        owner_id: 9713907
-        repo_id: 222439721
     'denoland/setup-deno@v2.0.5':
         ref: 'v2.0.5'
         commit: 'sha1-22d081ff2d3a40755e97629de92e3bcbfa7cf2ed'
@@ -112,6 +107,11 @@ dependencies:
         commit: 'sha1-6037f33647c3f17758a2356c80fc4a53d7e0685d'
         owner_id: 75048950
         repo_id: 623796603
+    'hyperpolymath/smtp-notify-action@v0.1.0':
+        ref: 'v0.1.0'
+        commit: 'sha1-1b3b752d39a4fe4c0f28f10905e4608789d3e050'
+        owner_id: 6759885
+        repo_id: 1352485172
     'jetli/wasm-pack-action@v0.4.0':
         ref: 'v0.4.0'
         commit: 'sha1-0d096b08b4e5a7de8c28de67e11e945404e9eefa'
