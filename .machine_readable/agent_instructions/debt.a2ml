@@ -6,44 +6,112 @@
 # Becomes the next session's Phase 0 input.
 #
 # Reference: ADR-002 in standards/agentic-a2ml/docs/
+#
+# Populated 2026-09-27 from the documentation-and-tooling recon. Every item
+# below was FOUND and deliberately NOT FIXED — either because it needs a
+# maintainer decision, or because it is outside the recon's remit.
 
 [metadata]
-version = "1.0.0"
-last-updated = "2026-03-24"
-
-# ============================================================================
-# DEBT ITEMS
-# ============================================================================
-# Each item has: component, issue, effort (easy|medium|hard), impact (high|medium|low),
-# priority (should|could), and discovered date.
-#
-# Items are consumed (removed) when fixed. New items are added at session end.
-# The debt list prevents the "one more wave" loop — found things are persisted,
-# not forgotten, and not used as justification for infinite meandering.
+version = "1.1.0"
+last-updated = "2026-09-27"
+source = "2026-09-27 documentation/tooling recon"
 
 # ============================================================================
 # SHOULD — would fix next wave
 # ============================================================================
-# These are inputs for the next session if the user says "keep going".
-#
-# Example:
-# [[debt.should]]
-# component = "system-tools/monitoring/observatory"
-# issue = "Stale duplicate of root observatory/"
-# effort = "easy"
-# impact = "medium"
-# discovered = "2026-03-23"
+
+[[debt.should]]
+component = ".github/workflows"
+issue = "Two workflows build the Pages site under one concurrency group: pages.yml (Ddraig SSG, Idris 2) and casket-pages.yml (casket-ssg, Haskell). They cancel each other. pages.yml also looks for README.md, which does not exist here (this repo uses README.adoc), so it would publish a bare '# hyperpolymath/blocky-writer' index. casket-pages.yml handles README.adoc correctly. Which one is canonical is an undecided owner call."
+effort = "medium"
+impact = "high"
+discovered = "2026-09-27"
+note = "Do not fix without an owner decision on which SSG wins. Any change needs the matching actions.lock change in the same commit, verified by scripts/check-lock-sync.sh (needs gawk)."
+
+[[debt.should]]
+component = ".github/workflows/hypatia-scan.yml"
+issue = "Hypatia Security Scan is red on main at e1b6225 (run 36296845360). The 'Hypatia Neurosymbolic Analysis' job fails at 'Build Hypatia scanner (if needed)' and 'Upload SARIF to GitHub code scanning'. It is not a blocky-writer defect, but it is red and it has no row in docs/ci/CHECK-DETERMINATIONS.adoc."
+effort = "medium"
+impact = "medium"
+discovered = "2026-09-27"
+note = "Needs a determination row before anyone touches it — the estate stopping rule requires every red-on-main check to have exactly one of fixed/retired/exempt."
+
+[[debt.should]]
+component = ".github/workflows/mirror.yml"
+issue = "Mirror to Git Forges is red on main at e1b6225 (run 36296845635). mirror-disroot, mirror-gitea, mirror-codeberg and mirror-bitbucket fail; mirror-gitlab, mirror-sourcehut and mirror-radicle are green. Looks like per-forge credential or host reachability rather than a workflow defect."
+effort = "medium"
+impact = "medium"
+discovered = "2026-09-27"
+note = "Also red at a94b5b5, so it predates the current branch. No determination row yet."
+
+[[debt.should]]
+component = "repository settings (owner-side)"
+issue = "The Branch-Floor ruleset (id 23869449, target ~DEFAULT_BRANCH) carries only 'deletion' and 'non_fast_forward'. It has no required_status_checks rule, so a red Lock Sync Gate or rust-core job is a convention rather than an enforcement."
+effort = "easy"
+impact = "high"
+discovered = "2026-09-27"
+note = "Owner action, listed in PR #73. Add 'actions.lock is in sync with the workflow YAML' and 'Rust core (tests, formatting, lint)', and tick 'require branches to be up to date'."
+
+[[debt.should]]
+component = "rust/pdftool_core"
+issue = "Ruled-line, per-character-cell and baseline detection are not implemented. detect_blocks reports widget annotation rectangles only. This is the 'hand spacing' case the project is named for, so it is the actual product gap rather than incidental debt."
+effort = "hard"
+impact = "high"
+discovered = "2026-09-27"
+note = "This is the thing to build next if the goal is the product rather than the plumbing."
 
 # ============================================================================
 # COULD — would fix eventually
 # ============================================================================
-# These are low-priority items that don't justify a session on their own.
-# They get picked up when an agent is in the area for other reasons.
-#
-# Example:
-# [[debt.could]]
-# component = "cicada"
-# issue = "RSR_OUTLINE.adoc references banned AGPL-3.0"
-# effort = "easy"
-# impact = "low"
-# discovered = "2026-03-23"
+
+[[debt.could]]
+component = "deno.lock"
+issue = "A ~90 KB deno.lock sits in the repository root, but #43 (2026-08-24) deleted deno.json and every deno task. It is an orphan and it is the single most likely thing to make a reviewer think this is a Deno project."
+effort = "easy"
+impact = "medium"
+discovered = "2026-09-27"
+note = "Deleting it is safe, but confirm with the owner first — it may be referenced by an estate tool outside this checkout."
+
+[[debt.could]]
+component = "webpack.config.cjs"
+issue = "A webpack config for a bundle pipeline that does not exist in this checkout (no package.json, no node_modules, no AffineScript compiler config). Reinforces the same wrong impression as deno.lock."
+effort = "easy"
+impact = "low"
+discovered = "2026-09-27"
+
+[[debt.could]]
+component = "Justfile"
+issue = "The crg-grade and crg-badge recipes read READINESS.md, which does not exist. Both silently fall back to grade 'X'. The CRG grade actually lives in TEST-NEEDS.adoc."
+effort = "easy"
+impact = "low"
+discovered = "2026-09-27"
+note = "Also, the tour and llm-context recipes look for README.md before README.adoc."
+
+[[debt.could]]
+component = "TEST-NEEDS.adoc"
+issue = "States 'CI workflows | 15'. There are 14 workflow files in .github/workflows (the 15th file is actions.lock). The document header also still reads 'TEST-NEEDS.md'."
+effort = "easy"
+impact = "low"
+discovered = "2026-09-27"
+
+[[debt.could]]
+component = "repository topics"
+issue = "Topics are automation, cli-tool, developer-tools, epistemic-computing, epistemic-infrastructure, equivalence-aware-computing, hyperpolymath, open-source, rust, typed-provenance, veridical-computing. None of them say pdf, firefox-extension, wasm, affinescript or document-suite, so the repo is not discoverable by what it actually is."
+effort = "easy"
+impact = "low"
+discovered = "2026-09-27"
+note = "Owner-side setting change; also update the GitHub description to match the boundary statement."
+
+[[debt.could]]
+component = "CHANGELOG.adoc"
+issue = "The [Unreleased] section was tidied into Keep-a-Changelog prose on 2026-09-27, but it is still derived from commit subjects by hand. The canonical git-cliff config is hyperpolymath/standards/templates/cliff.toml, and the changelog-reusable workflow it feeds has not been adopted here."
+effort = "medium"
+impact = "low"
+discovered = "2026-09-27"
+
+[[debt.could]]
+component = ".machine_readable/6a2/ECOSYSTEM.a2ml"
+issue = "Says only 'type = component'. It could carry the suite counterparts now recorded in docs/ecosystem/ECOSYSTEM.adoc and INTENT.contractile, so machine readers get the boundary without parsing prose."
+effort = "easy"
+impact = "low"
+discovered = "2026-09-27"

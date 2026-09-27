@@ -8,8 +8,8 @@
 # Reference: ADR-002 in standards/agentic-a2ml/docs/
 
 [metadata]
-version = "1.0.0"
-last-updated = "2026-03-24"
+version = "1.1.0"
+last-updated = "2026-09-27"
 spec = "https://github.com/hyperpolymath/standards/blob/main/agentic-a2ml/docs/ADR-002-methodology-layer.adoc"
 
 # ============================================================================
@@ -55,7 +55,7 @@ perfective = 10   # % for SPDX headers, doc updates, formatting, style
 # Customise this per project — the template default is generic.
 
 [methodology.unique-strength]
-description = "{{PROJECT_UNIQUE_STRENGTH}}"
+description = "Placement into fixed-layout forms that were designed for hand spacing: blocky-writer finds widget annotations in an existing PDF and writes values back into the AcroForm by field name, preserving page geometry exactly. Its nearest neighbours deliberately do not do this — Formatrix Docs views and edits, DocMatrix converts, Docudactyl extracts. Deepen the placement engine (ruled lines, per-character cells, baselines) rather than reaching into conversion or editing."
 deepen-not-broaden = true
 
 # ============================================================================
@@ -71,15 +71,16 @@ deepen-not-broaden = true
 
 [methodology.divergent-invariants]
 rules = [
-  # Customise per project. Examples:
-  # "Idris2 only for formal verification — no Lean4, Coq, Agda",
-  # "believe_me count must remain zero",
-  # "FFI architecture: Idris2 → RefC → Zig → C ABI (no shortcuts)",
+  "Rust only for the core — do not introduce another language for PDF work",
+  "unsafe block count in rust/pdftool_core must remain zero (crate is #![forbid(unsafe_code)])",
+  "The WASM export surface stays at detect_blocks and fill_blocks unless a new contract is agreed",
+  "BW_* error codes are append-only; never rename or repurpose one",
+  "Never normalise page geometry to 'tidy' it — composition contract clause 4",
+  "No JavaScript or Deno toolchain — #43 removed it deliberately",
 ]
 
 # Optional: language invariant for the core strength
-# If set, divergent mode will not introduce other languages for this purpose
-# language-invariant = "idris2"
+language-invariant = "rust"
 
 # ============================================================================
 # CONSTRAINT HINTS
@@ -89,9 +90,11 @@ rules = [
 
 [methodology.known-constraints]
 constraints = [
-  # Customise per project. Examples:
-  # "End-to-end build has never been verified",
-  # "libproject.so does not exist yet — all bindings call stubs",
+  "The AffineScript frontend cannot be built in this checkout — no compiler config, no package manifest, no bundle pipeline",
+  "deno.json and every deno task were deleted by #43 (2026-08-24); deno.lock is a leftover, not a declaration",
+  "Actions runs triggered by arena-ai-coding-agent[bot] are refused at startup, so bot-authored PRs show no checks at all",
+  "scripts/check-lock-sync.sh requires gawk, which is absent from most sandboxes",
+  "Branch-Floor ruleset carries no required_status_checks, so a red gate is a convention, not an enforcement",
 ]
 
 # ============================================================================

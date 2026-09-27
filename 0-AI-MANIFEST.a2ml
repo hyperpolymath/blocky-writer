@@ -1,6 +1,7 @@
 ;; SPDX-License-Identifier: MPL-2.0
 ;; 0-AI-MANIFEST.a2ml — AI Agent Entry Point
 ;; Repository: hyperpolymath/blocky-writer
+;; Last reviewed: 2026-09-27
 
 @abstract:
 AI manifest for blocky-writer. Read this file first before any other work.
@@ -9,28 +10,73 @@ AI manifest for blocky-writer. Read this file first before any other work.
 ;; === CANONICAL LOCATIONS ===
 ;; Machine-readable state: .machine_readable/
 ;; Documentation: docs/
-;; Source code: src/
-;; Tests: verification/tests/ or tests/
+;; Source code: src/ (AffineScript prototype — not buildable here)
+;; Implemented code: rust/pdftool_core/  (the only tested code in this repo)
+;; Tests: tests/ and rust/pdftool_core/src/lib.rs (#[cfg(test)] mod tests)
+;; Wiki source: wiki/   (published at github.com/hyperpolymath/blocky-writer/wiki)
 
 ;; === CRITICAL INVARIANTS ===
 ;; - SPDX headers on ALL files (MPL-2.0)
 ;; - No believe_me, assert_total, sorry, Admitted, unsafeCoerce, Obj.magic
+;; - rust/pdftool_core is #![forbid(unsafe_code)] — keep it that way
 ;; - SCM files ONLY in .machine_readable/ (never root)
+;; - BW_* error codes are stable API; adding or renaming one is a breaking change
+;; - Never silence a gate: no continue-on-error, no if: false, no quiet job deletion
+;; - Any change to a workflow `uses:` line ships with the matching actions.lock
+;;   change in the SAME commit (verify with scripts/check-lock-sync.sh, needs gawk)
 ;; - Author: Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>
+
+;; === READ IN THIS ORDER ===
+;;  1. README.adoc                     — what this is, current status, ecosystem boundary
+;;  2. wiki/Home.md                    — same, longer, with a navigation table
+;;  3. docs/ci/CHECK-DETERMINATIONS.adoc — the CI ledger AND its standing rules
+;;  4. docs/ecosystem/ECOSYSTEM.adoc   — what blocky-writer is NOT, and who does that
+;;  5. rust/pdftool_core/src/lib.rs    — the only implemented code
+;;
+;; Do NOT trust these without checking — each was corrected on 2026-09-27 and
+;; may drift again: TOPOLOGY.adoc, .github/CONTRIBUTING.md, CHANGELOG.adoc,
+;; EXPLAINME.adoc, .machine_readable/6a2/STATE.a2ml, www/.well-known/humans.txt,
+;; docs/tech-debt-2026-05-26.adoc (a 2026-05 snapshot — see its status section),
+;; and the Justfile's crg-grade/crg-badge recipes, which read a READINESS.md
+;; that does not exist.
+
+;; === THE THREE THINGS THAT WILL SURPRISE YOU ===
+;;  1. The frontend is a PROTOTYPE. There is no AffineScript compiler config, no
+;;     JS package manifest and no bundle pipeline in this checkout. deno.json and
+;;     every `deno task` were deleted by #43 on 2026-08-24. The leftover
+;;     deno.lock is not a declaration of anything. Nothing is release-ready.
+;;
+;;  2. You probably cannot run the Rust checks. Most sandboxes have no Rust
+;;     toolchain and no crates.io access. If you cannot run cargo fmt/test/clippy,
+;;     say so explicitly in your PR. Do not imply you ran them. CI is the only
+;;     authority on green.
+;;
+;;  3. Actions runs triggered by arena-ai-coding-agent[bot] are REFUSED at startup
+;;     ("Actor is not allowed to trigger Actions workflows"). A bot-authored PR
+;;     therefore shows NO repository checks at all — not red, absent — because a
+;;     startup failure creates no check run. This is an org-side policy; no file
+;;     change cures it. The owner must trigger or merge. Do not add
+;;     continue-on-error, do not weaken a gate, and do not treat the absence of
+;;     checks as a pass.
+
+;; === WHAT TO DO FIRST ===
+;; If asked to "finish" something, check docs/ci/CHECK-DETERMINATIONS.adoc for an
+;; open determination before writing code. Several items in this repo are
+;; documented as deliberately outstanding rather than forgotten.
 
 <!-- BEGIN requires-initialisation -->
 
-## PRIORITY ACTION — this repository is not fully initialised
+## Repository initialisation — COMPLETE
 
-10 substitution token(s) still have no value. **Read
-`REQUIRES_INITIALISATION.md` in the repository root before doing anything
-else here** — it lists every outstanding token, what it means, and which
-files it belongs in.
+All substitution tokens inherited from `hyperpolymath/rsr-template-repo` were
+resolved on 2026-09-27. **Nothing is outstanding.**
 
-Do not fabricate values for them, and do not delete the sections that
-contain them to quiet a gate. They are unfilled because they need a
-decision, not because they were overlooked. Resolve what you legitimately
-can, leave the rest, and delete `REQUIRES_INITIALISATION.md` only when
-nothing outstanding remains.
+The record of what was filled, and the evidence for each value, is in
+`REQUIRES_INITIALISATION.adoc`. That file is safe to delete; it is retained only
+until the estate top-up tool confirms and removes it.
+
+If you are an agent arriving after 2026-09-27 and this block still says
+"not fully initialised", it is stale — treat the resolved state as authoritative
+and fix the block.
 
 <!-- END requires-initialisation -->
