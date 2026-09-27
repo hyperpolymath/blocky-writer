@@ -1,0 +1,57 @@
+# SPDX-FileCopyrightText: 2026 Jonathan D.A. Jewell
+# SPDX-License-Identifier: MPL-2.0
+# Documentation issue template for hyperpolymath/blocky-writer
+name: Documentation
+description: Report wrong, missing or stale documentation
+title: "[Docs]: "
+labels: ["documentation"]
+assignees: []
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use this for anything in `README.adoc`, `TOPOLOGY.adoc`, `docs/`, the
+        wiki, or `.github/` that is wrong, missing or out of date.
+
+        Documentation drift is treated as a defect here, not a nit. If a document
+        told you something untrue about the state of the project, that is a bug
+        in the document.
+
+  - type: dropdown
+    id: kind
+    attributes:
+      label: What kind of problem?
+      options:
+        - "Stale — describes a state that is no longer true"
+        - "Wrong — describes something that was never true"
+        - "Missing — the information does not exist anywhere"
+        - "Contradictory — two documents disagree"
+        - "Unfindable — exists but is not linked from where you looked"
+    validations:
+      required: true
+
+  - type: input
+    id: location
+    attributes:
+      label: Which file or page?
+      description: Path in the repository, or the wiki page name.
+      placeholder: "TOPOLOGY.adoc — Completion Dashboard section"
+    validations:
+      required: true
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: What is wrong?
+      description: Quote the offending text if you can.
+      placeholder: "It says the Popup UI is 100% complete, but there is no build pipeline for it."
+    validations:
+      required: true
+
+  - type: textarea
+    id: correction
+    attributes:
+      label: What should it say?
+      description: If you know. If you do not, say so — that is useful information too.
+    validations:
+      required: false

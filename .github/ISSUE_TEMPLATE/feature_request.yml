@@ -1,0 +1,83 @@
+# SPDX-FileCopyrightText: 2026 Jonathan D.A. Jewell
+# SPDX-License-Identifier: MPL-2.0
+# Feature request issue template for hyperpolymath/blocky-writer
+name: Feature Request
+description: Suggest an idea or enhancement for this project
+title: "[Feature]: "
+labels: ["enhancement", "priority:p2"]
+assignees: []
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for suggesting a feature. Please describe your idea clearly so we can
+        evaluate and prioritize it.
+
+        **Before filing:** check the boundary statement in
+        `docs/ecosystem/ECOSYSTEM.adoc`. blocky-writer owns fixed-layout PDF and
+        application-form placement only. Viewing, editing, conversion, OCR and
+        print routing belong to other projects in the suite — if your idea is
+        one of those, it probably belongs there instead.
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem statement
+      description: Is your feature request related to a problem? Describe the pain point.
+      placeholder: "I'm always frustrated when [...]. Currently there is no way to [...]."
+    validations:
+      required: true
+
+  - type: textarea
+    id: solution
+    attributes:
+      label: Proposed solution
+      description: A clear and concise description of what you want to happen.
+      placeholder: "I'd like a command/option/feature that [...]."
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: Any alternative solutions or features you have considered.
+      placeholder: "I considered using X, but it doesn't work because [...]."
+    validations:
+      required: false
+
+  - type: dropdown
+    id: scope
+    attributes:
+      label: Which layer?
+      options:
+        - "rust-core — rust/pdftool_core"
+        - "frontend — src/*.affine prototype"
+        - "packaging / extension build"
+        - "ci / governance"
+        - "docs / wiki"
+        - "not sure"
+    validations:
+      required: false
+
+  - type: textarea
+    id: boundary
+    attributes:
+      label: Boundary check
+      description: |
+        Does this belong to blocky-writer, or to another project in the suite?
+        If another, name it and say why. This is not a blocker, but it speeds
+        triage considerably.
+      placeholder: "This belongs here because ... / This may belong to docmatrix because ..."
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Pre-flight
+      options:
+        - label: I searched existing issues and discussions and this is not a duplicate.
+          required: true
+        - label: I have read `docs/ecosystem/ECOSYSTEM.adoc` and believe this is in scope.
+          required: false
