@@ -18,47 +18,34 @@ icons)
 operations
 * `+scripts/+` — build helpers for WASM and extension bundles
 
-== Quick Start
+== Current status
 
-[arabic]
-. Install dependencies (Deno-first):
-+
+The Rust PDF core is implemented and has unit tests. The browser-extension
+frontend is a prototype: this checkout does not include an AffineScript compiler
+configuration, JavaScript package manifest, or a reproducible extension bundle
+pipeline. Therefore the previously documented `deno task build`, `deno task dev`,
+and `deno task test:core-fill` commands are not available and the extension is
+not currently release-ready.
+
+== Rust core development
+
+Run the implemented native checks from the repository root:
+
 [source,bash]
 ----
-deno install
+cargo fmt --manifest-path rust/pdftool_core/Cargo.toml -- --check
+cargo test --manifest-path rust/pdftool_core/Cargo.toml --locked
+cargo clippy --manifest-path rust/pdftool_core/Cargo.toml --locked --all-targets -- -D warnings
 ----
 
-[arabic]
-. Build AffineScript output and bundle extension assets:
-+
+Build the Rust WASM package (requires `wasm-pack` and the WASM Rust target):
+
 [source,bash]
 ----
-deno task build
+scripts/build-wasm.sh
 ----
 
-[arabic]
-. Build the Rust WASM package:
-+
-[source,bash]
-----
-deno task build:wasm
-----
-
-[arabic]
-. Run the extension in Firefox via `+web-ext+`:
-+
-[source,bash]
-----
-deno task dev
-----
-
-[arabic]
-. Run core fill fixture tests (error taxonomy + AcroForm writeback):
-+
-[source,bash]
-----
-deno task test:core-fill
-----
+See `+rust/pdftool_core/README.adoc+` for scope and known limitations.
 
 == Notes
 
@@ -68,19 +55,6 @@ text/select and button widgets, and emits structured taxonomy errors
 * Popup/background/content surfaces preserve taxonomy codes from the
 Rust WASM boundary.
 * Source files include SPDX headers targeting MPL-2.0.
-
-== Firefox Troubleshooting
-
-* If `+deno+` `+task+` `+dev+` fails with `+ECONNREFUSED+`
-`+127.0.0.1:<port>+`, verify Firefox is installed and runnable.
-* Close stale Firefox instances launched by prior `+web-ext+` sessions,
-then retry `+deno+` `+task+` `+dev+`.
-* You can run `+web-ext+` directly with an explicit binary when needed:
-+
-[source,bash]
-----
-deno run -A npm:web-ext run --source-dir dist --firefox /usr/bin/firefox
-----
 
 == Architecture
 

@@ -15,31 +15,30 @@ on:
   pull_request:
 
 jobs:
-  core-fill-tests:
+  rust-core:
+    name: Rust core (tests, formatting, lint)
     runs-on: ubuntu-latest
-
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v7.0.1
-      - uses: denoland/setup-deno@v2.0.5
-        with:
-          deno-version: v2.x
-
       - uses: dtolnay/rust-toolchain@v1
-      - run: deno task test:core-fill
+        with:
+          toolchain: stable
+          components: rustfmt, clippy
+      - name: Check formatting
+        run: cargo fmt --manifest-path rust/pdftool_core/Cargo.toml -- --check
+      - name: Run unit tests
+        run: cargo test --manifest-path rust/pdftool_core/Cargo.toml --locked
+      - name: Run Clippy
+        run: cargo clippy --manifest-path rust/pdftool_core/Cargo.toml --locked --all-targets -- -D warnings
 
-  extension-build:
+  workflow-lock:
+    name: Verify Actions lockfile
     runs-on: ubuntu-latest
-
+    timeout-minutes: 5
     steps:
       - uses: actions/checkout@v7.0.1
-      - uses: denoland/setup-deno@v2.0.5
-        with:
-          deno-version: v2.x
-
-      - uses: dtolnay/rust-toolchain@v1
-      - uses: jetli/wasm-pack-action@v0.4.0
-        with:
-          version: "latest"
-
-      - run: deno task build:wasm
-      - run: deno task build
+      - name: Install GNU awk
+        run: sudo apt-get update && sudo apt-get install -y gawk
+      - name: Verify workflow lockfile
+        run: ./scripts/check-lock-sync.sh

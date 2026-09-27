@@ -1,25 +1,40 @@
-== pdftool_core
+= pdftool_core
 
-Rust/WASM core for `+blocky-writer+`.
+Rust/WASM core for `blocky-writer`.
 
-=== Current scope
+== Implemented
 
-* Exposes `+detect_blocks(pdf_data)+` for block metadata extraction
-(placeholder output for now).
-* Exposes `+fill_blocks(pdf_data, blocks, fields)+` for writeback
-(currently passthrough).
+* `detect_blocks` parses PDF AcroForm widget annotations and returns their
+  labels and rectangles. It does not perform OCR or general-purpose visual
+  block detection.
+* `fill_blocks` updates matching AcroForm field values and returns serialized
+  PDF bytes. It supports the field types and validation covered by the unit
+  tests; it is not a PDF renderer.
+* Core parsing and writeback behavior is covered by Rust unit tests in
+  `src/lib.rs`.
 
-=== Build
+== Native development checks
+
+From the repository root:
 
 [source,bash]
 ----
-wasm-pack build --target web --out-dir pkg
+cargo fmt --manifest-path rust/pdftool_core/Cargo.toml -- --check
+cargo test --manifest-path rust/pdftool_core/Cargo.toml --locked
+cargo clippy --manifest-path rust/pdftool_core/Cargo.toml --locked --all-targets -- -D warnings
 ----
 
-=== Next implementation milestones
+== WebAssembly packaging
 
-[arabic]
-. Parse PDF page geometry and form widgets.
-. Integrate OCR-backed fallback for scanned documents.
-. Write field values back into PDF objects with deterministic
-positioning.
+Install Rust with the `wasm32-unknown-unknown` target and `wasm-pack`, then run:
+
+[source,bash]
+----
+scripts/build-wasm.sh
+----
+
+The extension frontend currently has no checked-in compiler/package manifest or
+reproducible bundle build. The `.affine` source files are a prototype and are
+not presently wired into a verified extension build. Do not treat the frontend
+as a release-ready browser extension until that toolchain and its integration
+tests are established.
