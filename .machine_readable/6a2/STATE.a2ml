@@ -1,14 +1,54 @@
 # SPDX-License-Identifier: MPL-2.0
 # STATE.a2ml — Project state checkpoint
 # Converted from STATE.scm on 2026-03-15
+# Reviewed and corrected 2026-09-27 — the completion percentage below was
+# stale (it still read 0 from the initial conversion). It now reflects what is
+# actually implemented and verified. TOPOLOGY.adoc carries the per-component
+# breakdown; this file carries the headline.
 
 [metadata]
 project = "blocky-writer"
 version = "0.1.0"
-last-updated = "2026-03-15"
+last-updated = "2026-09-27"
 status = "active"
 
 [project-context]
 name = "blocky-writer"
-completion-percentage = 0
-phase = "In development"
+# Working, verified code only. The AffineScript frontend is a prototype with no
+# build pipeline in this checkout and is counted as 0 despite having sources.
+completion-percentage = 50
+phase = "In development — Rust core green, frontend prototype"
+
+[verified]
+# Things with a command that proves them.
+rust-core-fmt = "green (cargo fmt -- --check)"
+rust-core-tests = "green (cargo test --locked, 6/6)"
+rust-core-clippy = "green (cargo clippy --all-targets -- -D warnings)"
+rust-core-sha = "e1b6225"
+rust-core-run = 36296845297
+ci-rust-core-job = "green on main"
+lock-sync-gate = "green on main"
+governance = "green on main"
+codeql = "green on main"
+
+[not-implemented]
+# Counted as zero. Do not describe these as in progress without evidence.
+extension-bundle-pipeline = "no AffineScript compiler config, no package manifest, no reproducible bundle (deno.json removed by #43, 2026-08-24)"
+ruled-line-detection = "not implemented — the 'hand spacing' case the project is named for"
+per-character-cell-detection = "not implemented"
+baseline-detection = "not implemented"
+signature-field-writeback = "not implemented (Tx / Ch / Btn only)"
+
+[known-red-on-main]
+# Not blocky-writer defects, but they are red and they are not in the ledger yet.
+hypatia-security-scan = "run 36296845360 — Hypatia Neurosymbolic Analysis job fails building the scanner and uploading SARIF"
+mirror-to-git-forges = "run 36296845635 — mirror-disroot, mirror-gitea, mirror-codeberg, mirror-bitbucket fail; gitlab, sourcehut, radicle green"
+
+[open-decisions]
+pages-ssg = "two workflows build the Pages site under one concurrency group: pages.yml (Ddraig/Idris2) and casket-pages.yml (casket-ssg/Haskell). Which is canonical is undecided."
+required-status-checks = "Branch-Floor ruleset (id 23869449) carries no required_status_checks rule. Owner-side fix is pending."
+
+[ecosystem]
+suite = "precision document suite"
+contract = "https://github.com/hyperpolymath/docmatrix/issues/71"
+siblings = "docmatrix (conversion), formatrix-docs (viewer/editor), ForthWall (proposed, unbuilt)"

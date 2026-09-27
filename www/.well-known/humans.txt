@@ -7,8 +7,12 @@ Contact: j.d.a.jewell@open.ac.uk
 From: United Kingdom
 
 /* SITE */
-Last update: 2026-03-28
+Last update: 2026-09-27
 Standards: RSR (Rhodium Standard Repository)
 License: MPL-2.0 (Palimpsest MPL)
-Components: Idris2 ABI, Zig FFI
-Tools: just, Podman, Guix
+Components: Rust/WASM core (lopdf), AffineScript frontend prototype
+Site generator: casket-ssg (Haskell) — see the duplicate-workflow note in docs/ci/CHECK-DETERMINATIONS.adoc
+
+/* THANKS */
+The hyperpolymath estate, and the precision document suite:
+docmatrix, formatrix-docs, and the proposed ForthWall.

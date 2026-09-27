@@ -1,121 +1,187 @@
-# Clone the repository
+<!--
+SPDX-FileCopyrightText: 2026 Jonathan D.A. Jewell
+SPDX-License-Identifier: MPL-2.0
+-->
 
-git clone https://github.com/hyperpolymath/language-bridges.git
+# Contributing to blocky-writer
+
+**Read `README.adoc` first.** The short version of where this project stands:
+the Rust/WASM core (`rust/pdftool_core`) is implemented, unit-tested and green
+in CI. The AffineScript frontend (`src/*.affine`) is a prototype with no build
+pipeline in this checkout. Nothing here is release-ready as a Firefox extension
+yet.
+
+---
+
+## Clone and set up
+
+```bash
+git clone https://github.com/hyperpolymath/blocky-writer.git
 cd blocky-writer
+```
 
-# Using Guix (recommended for reproducibility)
+You need **Rust stable** with the `rustfmt` and `clippy` components. Nothing else
+is required for the only checks that exist:
 
-guix develop
+```bash
+rustup toolchain install stable --component rustfmt clippy
+```
 
-# Or using toolbox/distrobox
+There is **no** Node, Deno, npm, `wasm-pack` or Guix requirement. Older documents
+in this repository describe a different project shape — if a file tells you to
+run `deno task`, `just check`, or `guix develop`, it is stale. Please report it
+with the *Documentation* issue template.
 
-toolbox create language-bridges-dev
-toolbox enter language-bridges-dev
-# Install dependencies manually
+### Optional tooling in the tree
 
-# Verify setup
+| File | What it is |
+| --- | --- |
+| `Justfile`, `contractile.just` | `just` recipes: `just doctor`, `just tour`, `just help-me`, `just aspect`, `just crg-grade`. Run `just --list` for the current set. |
+| `mise.toml`, `.tool-versions` | Tool version pinning. |
+| `Containerfile`, `stapeln.toml`, `selur-compose/compose.toml` | Container and compose definitions. |
+| `setup.sh` | Bootstrap script. |
+| `scripts/build-wasm.sh` | Builds the WASM package. Needs `wasm-pack` + `wasm32-unknown-unknown`. Nothing in CI runs it and nothing consumes the output yet. |
 
-just check   # or: cargo check / mix compile / etc.
-just test    # Run test suite
+Several of these were minted from `hyperpolymath/rsr-template-repo` and describe
+a project shape this repository does not have. Treat them as scaffolding.
 
-### Repository Structure
+---
+
+## Repository structure
 
 ```text
 blocky-writer/
-├── src/ # Source code (Perimeter 1-2)
-├── lib/ # Library code (Perimeter 1-2)
-├── extensions/ # Extensions (Perimeter 2)
-├── plugins/ # Plugins (Perimeter 2)
-├── tools/ # Tooling (Perimeter 2)
-├── docs/ # Documentation (Perimeter 3)
-│   ├── architecture/ # ADRs, specs (Perimeter 2)
-│   └── proposals/ # RFCs (Perimeter 3)
-├── examples/ # Examples (Perimeter 3)
-├── spec/ # Spec tests (Perimeter 3)
-├── tests/ # Test suite (Perimeter 2-3)
-├── .well-known/ # Protocol files (Perimeter 1-3)
-├── .github/ # GitHub config (Perimeter 1)
-│   ├── CONTRIBUTING.md # This file
-│   ├── ISSUE_TEMPLATE/
-│   └── workflows/
-├── CHANGELOG.md
-├── CODE_OF_CONDUCT.md
-├── GOVERNANCE.md
-├── LICENSE
-├── MAINTAINERS.md
-├── README.adoc
-├── SECURITY.md
-├── flake.guix # Guix flake (Perimeter 1)
-└── justfile # Task runner (Perimeter 1)
+├── rust/pdftool_core/        # Rust → WASM core (the only tested code)
+│   ├── src/lib.rs            #   detect_blocks, fill_blocks, BW_* taxonomy
+│   ├── Cargo.toml
+│   └── Cargo.lock            # committed; CI runs with --locked
+├── src/                      # AffineScript prototype (not buildable here)
+│   ├── popup.affine, content.affine, background.affine
+│   ├── components/           #   Block.affine, FormFiller.affine
+│   └── core/                 #   PdfTool, ProvenMount, Storage
+├── public/                   # manifest.json, popup.html, icons
+├── tests/                    # aspect + fuzz placeholder
+├── scripts/                  # build-wasm.sh, check-lock-sync.sh
+├── wiki/                     # BerryWiki-format wiki source (see wiki/README.adoc)
+├── docs/
+│   ├── ci/CHECK-DETERMINATIONS.adoc   # the CI ledger — read the standing rules
+│   ├── ecosystem/ECOSYSTEM.adoc       # suite boundary and neighbours
+│   └── reports/, tech-debt-*.adoc
+├── .machine_readable/        # machine-readable state; load-bearing, do not restructure
+├── www/.well-known/          # ai.txt, humans.txt, security.txt
+├── README.adoc               # the README (AsciiDoc, not Markdown)
+├── TOPOLOGY.adoc             # architecture map + completion dashboard
+├── EXPLAINME.adoc
+├── TEST-NEEDS.adoc           # CRG test grade
+├── CHANGELOG.adoc
+├── CODE_OF_CONDUCT.adoc
+├── SECURITY.adoc
+├── GOVERNANCE.adoc
+├── Containerfile
+├── Justfile
+└── .github/
+    ├── ISSUE_TEMPLATE/       # bug_report, feature_request, documentation, config
+    ├── PULL_REQUEST_TEMPLATE.md
+    ├── workflows/
+    └── actions.lock
 ```
 
-    ---
+Note the `.adoc` extensions. This repository documents itself in AsciiDoc, not
+Markdown.
 
-## How to Contribute
+---
 
-### Reporting Bugs
+## How to contribute
 
-    **Before reporting**:
-    1. Search existing issues
-    2. Check if it's already fixed in `main`
-    3. Determine which perimeter the bug affects
+### Reporting bugs
 
-    **When reporting**:
+Use the [bug report template](.github/ISSUE_TEMPLATE/bug_report.yml). Include:
 
-    Use the [bug report template](.github/ISSUE_TEMPLATE/bug_report.md) and include:
+* Which area — Rust core, frontend prototype, CI, docs or packaging.
+* Steps to reproduce. For core bugs, a minimal PDF and the field map you passed.
+* The **whole** error payload if you got one. Core failures carry a stable
+  machine code plus message and context; the code alone is not enough.
 
-    - Clear, descriptive title
-    - Environment details (OS, versions, toolchain)
-    - Steps to reproduce
-    - Expected vs actual behaviour
-    - Logs, screenshots, or minimal reproduction
+Before reporting, search existing issues and check whether the bug is in the
+core (actionable) or the frontend prototype (may not be).
 
-### Suggesting Features
+### Suggesting features
 
-    **Before suggesting**:
-    1. Check the [roadmap](ROADMAP.md) if available
-    2. Search existing issues and discussions
-    3. Consider which perimeter the feature belongs to
+Use the [feature request template](.github/ISSUE_TEMPLATE/feature_request.yml).
+Check `docs/ecosystem/ECOSYSTEM.adoc` first — blocky-writer owns fixed-layout PDF
+and application-form placement *only*. Viewing, editing, conversion, OCR and
+print routing belong to other projects in the suite.
 
-    **When suggesting**:
+### Reporting documentation problems
 
-    Use the [feature request template](.github/ISSUE_TEMPLATE/feature_request.md) and include:
+Use the [documentation template](.github/ISSUE_TEMPLATE/documentation.yml).
+Documentation drift is a defect here, not a nit.
 
-    - Problem statement (what pain point does this solve?)
-    - Proposed solution
-    - Alternatives considered
-    - Which perimeter this affects
+### Security
 
-### Your First Contribution
+Do **not** open a public issue. Use
+[GitHub Security Advisories](https://github.com/hyperpolymath/blocky-writer/security/advisories/new).
+See `SECURITY.adoc`.
 
-    Look for issues labelled:
+### Opening a pull request
 
-    - [`good first issue`](https://github.com/hyperpolymath/language-bridges/labels/good%20first%20issue) — Simple Perimeter 3 tasks
-    - [`help wanted`](https://github.com/hyperpolymath/language-bridges/labels/help%20wanted) — Community help needed
-    - [`documentation`](https://github.com/hyperpolymath/language-bridges/labels/documentation) — Docs improvements
-    - [`perimeter-3`](https://github.com/hyperpolymath/language-bridges/labels/perimeter-3) — Community sandbox scope
+1. Fork and branch from `main`.
+2. Make your change.
+3. Run the three core checks — **all three must pass**:
 
-    ---
+   ```bash
+   cargo fmt    --manifest-path rust/pdftool_core/Cargo.toml -- --check
+   cargo test   --manifest-path rust/pdftool_core/Cargo.toml --locked
+   cargo clippy --manifest-path rust/pdftool_core/Cargo.toml --locked --all-targets -- -D warnings
+   ```
 
-## Development Workflow
+   `cargo test` runs 6 tests. If you get a different number, something changed
+   and the wiki is stale — fix the wiki too.
 
-### Branch Naming
+   If you cannot run these — no Rust toolchain, no crates.io access — **say so
+   explicitly in the PR** rather than implying you did. CI is the only authority
+   on green.
 
-docs/short-description # Documentation (P3) test/what-added # Test
-additions (P3) feat/short-description # New features (P2)
-fix/issue-number-description # Bug fixes (P2) refactor/what-changed #
-Code improvements (P2) security/what-fixed # Security fixes (P1-2)
+4. **If you changed a `uses:` line in any workflow**, regenerate
+   `.github/workflows/actions.lock` in the *same commit* and run
+   `scripts/check-lock-sync.sh` (needs `gawk`). A stale lock entry is as fatal as
+   a missing one, and the failure is silent — `startup_failure`, zero jobs, no
+   log.
+5. **If you removed or retired a CI check**, add or update a row in
+   `docs/ci/CHECK-DETERMINATIONS.adoc`.
+6. Fill in `.github/PULL_REQUEST_TEMPLATE.md`. Do not delete the checklist.
 
+### House rules
 
-### Commit Messages
+* AsciiDoc (`.adoc`) for repository documentation. SPDX header on every file.
+* MPL-2.0 licence, Palimpsest philosophy.
+* Conventional commits: `fix(rust): …`, `docs(ci): …`, `ci: …`.
+* No new TypeScript, Python or Go. No npm/bun/yarn/pnpm dependencies.
+* No `unsafe` blocks in Rust without a safety comment. The core is
+  `#![forbid(unsafe_code)]` — keep it that way.
+* `.machine_readable/` is load-bearing. Do not restructure it casually.
+* `BW_*` error codes are stable API. Adding or renaming one is a breaking change.
+* **Never** silence a gate. No `continue-on-error`, no `if: false`, no quiet
+  deletion of a job.
 
-    We follow [Conventional Commits](https://www.conventionalcommits.org/):
+### CI you cannot trigger
 
-type(scope): description
+Every Actions run whose actor is `arena-ai-coding-agent[bot]` is refused at
+startup (`Actor is not allowed to trigger Actions workflows`). A bot-authored PR
+shows **no** repository checks at all — not red, absent — because a startup
+failure creates no check run. This is an org-side policy; no file change cures
+it. Bot PRs must be merged by the repository owner so the merge push carries an
+allowed actor. See the `<<actor>>` section of `docs/ci/CHECK-DETERMINATIONS.adoc`.
 
-Body: what changed and why.
+---
 
-Footer: issue reference, e.g. Closes #123
-\[optional body\]
+## The wiki
 
-\[optional footer\]
+The project wiki lives at
+<https://github.com/hyperpolymath/blocky-writer/wiki> in BerryWiki format. Its
+source of truth is `wiki/` in this repository. See `wiki/README.adoc` for how to
+edit and publish it.
+
+## Questions
+
+Open an issue, or see `GOVERNANCE.adoc` for how decisions are made.

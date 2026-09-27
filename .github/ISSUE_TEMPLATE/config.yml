@@ -1,0 +1,14 @@
+# SPDX-FileCopyrightText: 2026 Jonathan D.A. Jewell
+# SPDX-License-Identifier: MPL-2.0
+# Issue template chooser configuration for hyperpolymath/blocky-writer
+blank_issues_enabled: true
+contact_links:
+  - name: Project wiki
+    url: https://github.com/hyperpolymath/blocky-writer/wiki
+    about: BerryWiki-format wiki — architecture, Rust core, CI gates, ecosystem and glossary. Source of truth is wiki/ in this repository.
+  - name: Ecosystem boundary
+    url: https://github.com/hyperpolymath/docmatrix/issues/71
+    about: The versioned composition contract for the precision document suite, and where each project's boundary is declared.
+  - name: Security vulnerabilities
+    url: https://github.com/hyperpolymath/blocky-writer/security/advisories/new
+    about: Report security vulnerabilities privately via GitHub Security Advisories. Do not open a public issue.

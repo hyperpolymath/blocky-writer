@@ -3,6 +3,16 @@
 ; Helps LLM/SLM agents understand what this repo IS and IS NOT.
 ;
 ; Part of the contractile family: MUST, TRUST, DUST, INTENT, ADJUST
+;
+; Token fill: 2026-09-27. The seven {{...}} tokens this file inherited from
+; hyperpolymath/rsr-template-repo were resolved from evidence in this
+; repository and in the suite contract, not invented:
+;   MONOREPO_OR_STANDALONE — this is its own repository, not a workspace root.
+;   DEP1 / DEP2             — rust/pdftool_core/Cargo.toml.
+;   CONSUMER1 / CONSUMER2   — named as suite components in docmatrix#71.
+;   ONE_PARAGRAPH_*         — derived from README.adoc and
+;                             docs/ecosystem/ECOSYSTEM.adoc.
+; REQUIRES_INITIALISATION.adoc records the fill.
 
 ; ── Definitions ──────────────────────────────────────────────────
 ;
@@ -30,43 +40,85 @@
 ; ── End Definitions ──────────────────────────────────────────────
 
 (intent-contractile
-  (version "1.0.0")
+  (version "1.1.0")
   (repo "blocky-writer")
 
   ; === Purpose (what this repo IS) ===
   (purpose
-    "{{ONE_PARAGRAPH_PURPOSE}}"
+    "blocky-writer fills fixed-layout PDF and application forms — the kind laid
+     out for boxes, baselines and per-character cells that were designed for
+     hand spacing rather than reliable computer entry. It ships as a Mozilla
+     Firefox extension: a Rust core compiled to WebAssembly that detects widget
+     annotations and writes values back into the AcroForm, behind a thin
+     AffineScript frontend. Its contribution to the precision document suite is
+     placement into a form that already exists, not the creation or conversion
+     of the document."
   )
 
   ; === Anti-Purpose (what this repo is NOT — prevents scope creep) ===
   (anti-purpose
-    "{{ONE_PARAGRAPH_ANTI_PURPOSE}}"
-    ; Examples:
-    ; "This is NOT a general-purpose database — it solves one specific problem."
-    ; "This is NOT a framework — it is a library with a focused API."
-    ; "This does NOT handle authentication — that is delegated to [other repo]."
+    "This is NOT a document viewer or editor — tabbed multi-format viewing and
+     editing belongs to Formatrix Docs. It is NOT a conversion engine — that is
+     DocMatrix, and no lossy hub format (Microsoft Word or otherwise) is ever to
+     become mandatory here. It is NOT an OCR, NER or metadata-extraction
+     pipeline — that is Docudactyl. It is NOT a print router — that is
+     Presswerk. It is NOT a cross-document consistency reconciler — that is
+     recon-silly-ation. It is NOT a general-purpose PDF library: it does not
+     render, typeset or lay out pages, and it does not implement the proposed
+     ForthWall execution layer. It is NOT only for users with perfect vision,
+     hearing or mobility — the accessibility work in wokelangiser.toml is part
+     of the project, not an optional extra."
   )
 
   ; === Key Architectural Decisions That Must Not Be Reversed ===
   (architectural-invariants
-    ; *REMINDER: List the foundational decisions*
-    ; ("Idris2 for ABI definitions — dependent types prove interface correctness")
-    ; ("Zig for FFI — zero-cost C ABI compatibility")
-    ; ("Elixir for supervision — OTP fault tolerance")
+    ("Rust for the core, compiled to WASM — the PDF work is numeric and
+      security-relevant; a memory-safe language is the point, and
+      rust/pdftool_core is #![forbid(unsafe_code)]")
+    ("The WASM boundary is exactly two functions — detect_blocks and
+      fill_blocks. Everything else is private. Do not widen the surface
+      casually; each export is a permanent contract with the frontend")
+    ("Field writeback is NAME-driven, not coordinate-driven. fill_blocks keys
+      on AcroForm field names; the blocks argument is validated but not used to
+      place content. Reversing this would silently change what the tool means")
+    ("BW_* error codes are stable API. Failures cross the boundary as
+      structured {code, message, context} payloads, never as bare strings")
+    ("Page geometry is never silently normalised. This is clause 4 of the
+      composition contract in docmatrix#71, and geometry is this project's
+      whole subject — the temptation to 'tidy' a rectangle is the failure the
+      clause exists to prevent")
+    ("Deno is gone. deno.json and every deno task were deleted by #43 on
+      2026-08-24; the leftover deno.lock is not a declaration of anything.
+      Do not reintroduce a JavaScript toolchain")
   )
 
   ; === Sensitive Areas (if in doubt, ask) ===
   (ask-before-touching
-    ; *REMINDER: List areas where LLMs should check before modifying*
-    ; "src/abi/ — formal proofs, changes require re-verification"
-    ; "ffi/zig/ — C ABI boundary, changes affect all language bindings"
-    ; ".machine_readable/ — checkpoint files, format is specified"
+    ".machine_readable/ — checkpoint and contractile files; the format is
+      specified by the estate and several gates read it"
+    ".github/workflows/actions.lock — must change in the same commit as any
+      uses: line it records, or GitHub refuses to start the workflow silently
+      (startup_failure, zero jobs, no log)"
+    "docs/ci/CHECK-DETERMINATIONS.adoc — the estate stopping-rule ledger. A
+      check may be retired or repaired, never muted"
+    "rust/pdftool_core/src/lib.rs public surface — detect_blocks, fill_blocks,
+      the Block struct and every BW_* code are external contract"
+    "www/.well-known/ — ai.txt, humans.txt and security.txt are externally
+      visible policy statements, not documentation"
   )
 
   ; === Ecosystem Position ===
+  ; Filled 2026-09-27 from docmatrix#71, which names blocky-writer as one of the
+  ; suite's user-facing components and carries the versioned composition
+  ; contract. If this file and docmatrix#71 disagree, docmatrix#71 wins.
   (ecosystem
-    (belongs-to "{{MONOREPO_OR_STANDALONE}}")
-    (depends-on ("{{DEP1}}" "{{DEP2}}"))
-    (depended-on-by ("{{CONSUMER1}}" "{{CONSUMER2}}"))
+    (belongs-to "standalone")
+    (depends-on ("lopdf" "wasm-bindgen"))
+    (depended-on-by ("docmatrix" "formatrix-docs"))
+    (contract "https://github.com/hyperpolymath/docmatrix/issues/71")
+    (note "blocky-writer is a component of the hyperpolymath precision document
+           suite, not a library it consumes. 'Depended-on-by' here names the
+           suite projects whose boundaries docmatrix#71 defines relative to
+           this one; no code-level dependency exists in either direction.")
   )
 )

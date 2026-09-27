@@ -1,5 +1,36 @@
 == Tech-Debt Audit — blocky-writer — 2026-05-26
 
+'''''
+
+IMPORTANT: The sections below are a *snapshot taken on 2026-05-26*. Several
+findings have since been resolved and some numbers are now wrong. Read
+<<status-2026-09-27>> before acting on anything here.
+
+[[status-2026-09-27]]
+== Status as of 2026-09-27
+
+[cols="2,1,3",options="header"]
+|===
+| Finding | Now | Evidence
+
+| `CHANGELOG.md` missing | *Resolved* | `CHANGELOG.adoc` exists and has an `[Unreleased]` section. It is still generated from commit subjects rather than maintained by hand, so the *quality* finding stands even though the *existence* finding does not.
+| `CONTRIBUTING.md` present but wrong | *Resolved* | `.github/CONTRIBUTING.md` was rewritten on 2026-09-27. It had described `hyperpolymath/language-bridges`, a `lib/`/`extensions/`/`plugins/` layout, `just check`, `mix compile` and `flake.guix` — none of which exist here.
+| No `docs/` directory | *Resolved* | `docs/` now holds `ci/CHECK-DETERMINATIONS.adoc`, `ecosystem/ECOSYSTEM.adoc`, `accessibility/`, `compliance/`, `reports/audit/` and the tech-debt files.
+| `docs/` LoC 490, README 87 lines | *Stale numbers* | Both have grown. Recount rather than trusting these figures.
+| README doing the work of `docs/` | *Partly resolved* | README is still the entry point, but `docs/ecosystem/ECOSYSTEM.adoc`, `TOPOLOGY.adoc`, `EXPLAINME.adoc` and `wiki/` now carry the detail.
+| Documentation debt overall | *Reduced, not closed* | `TOPOLOGY.adoc` claimed a Deno-first toolchain and 100% frontend completion; `EXPLAINME.adoc` listed Deno as a technology choice; `www/.well-known/humans.txt` described an Idris2/Zig project. All three corrected on 2026-09-27.
+| Proof debt (no `*.v`/`*.lean`/…) | *Unchanged* | Still none. See section 1 below.
+| Licence debt | *Unchanged, still ok* | See section 2 below.
+
+|===
+
+New debt introduced or discovered since the snapshot is recorded in
+`.machine_readable/agent_instructions/debt.a2ml` and in the
+`known-red-on-main` and `open-decisions` sections of
+`.machine_readable/6a2/STATE.a2ml`.
+
+'''''
+
 *Source:* estate-wide automated scan 2026-05-26. *Companion:*
 https://github.com/hyperpolymath/standards/tree/main/docs/audits[`+hyperpolymath/standards+`
 2026-05-26-estate-*-debt audits]. *Combined severity:* `+MEDIUM+`.

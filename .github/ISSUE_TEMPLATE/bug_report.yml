@@ -1,0 +1,116 @@
+# SPDX-FileCopyrightText: 2026 Jonathan D.A. Jewell
+# SPDX-License-Identifier: MPL-2.0
+# Bug report issue template for hyperpolymath/blocky-writer
+name: Bug Report
+description: Create a report to help us improve
+title: "[Bug]: "
+labels: ["bug", "priority:p2"]
+assignees: []
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for taking the time to report a bug. Please fill out the sections below
+        so we can reproduce and fix the issue.
+
+        **Before filing:** check whether the bug is in the Rust core or in the
+        AffineScript frontend prototype. Only the Rust core is implemented and
+        tested today; the frontend has no build pipeline, so frontend bugs may
+        not be actionable.
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: Which area?
+      description: Pick the closest match. Used for triage only.
+      options:
+        - "rust-core — rust/pdftool_core (detect_blocks / fill_blocks)"
+        - "rust-core — error taxonomy (BW_* codes)"
+        - "frontend — src/*.affine prototype (no build pipeline)"
+        - "ci — workflows, actions.lock, gates"
+        - "docs — README, wiki, docs/"
+        - "packaging — Containerfile, manifest, selur-compose"
+    validations:
+      required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Describe the bug
+      description: A clear and concise description of what the bug is.
+      placeholder: When I do X, Y happens instead of Z.
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Steps to reproduce
+      description: Detailed steps to reproduce the behavior. A minimal PDF and field map is ideal.
+      placeholder: |
+        1. Load a PDF with an AcroForm containing ...
+        2. Call `fill_blocks(pdf, blocks, { "Name": "Ada" })`
+        3. The returned PDF has ...
+      value: |
+        1.
+        2.
+        3.
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+      description: A clear and concise description of what you expected to happen.
+    validations:
+      required: true
+
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: Versions and platform. For core bugs, the Rust toolchain and lopdf version matter.
+      placeholder: |
+        - OS:
+        - Rust:
+        - blocky-writer commit:
+        - Firefox version (if frontend):
+      value: |
+        - OS:
+        - Rust:
+        - blocky-writer commit:
+    validations:
+      required: false
+
+  - type: textarea
+    id: error-code
+    attributes:
+      label: Error code, if any
+      description: |
+        Core failures carry a stable machine code (`BW_*`) plus a message and
+        optional context. Paste the whole payload — the code alone is not enough.
+      placeholder: |
+        { "code": "BW_FILL_NO_MATCHING_FIELDS", "message": "...", "context": "..." }
+    validations:
+      required: false
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs or output
+      description: Any relevant output. For CI failures, link the run.
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Pre-flight
+      options:
+        - label: I searched existing issues and this is not a duplicate.
+          required: true
+        - label: I ran the three core checks (`cargo fmt --check`, `cargo test --locked`, `cargo clippy -D warnings`) where applicable.
+          required: false
+        - label: I have read the current status in the repository README and understand the frontend is a prototype.
+          required: false

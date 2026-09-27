@@ -1,0 +1,108 @@
+// SPDX-License-Identifier: MPL-2.0
+= Wiki — blocky-writer
+:toc:
+:icons: font
+
+This directory is the **source of truth** for the project wiki. The published
+wiki at https://github.com/hyperpolymath/blocky-writer/wiki is a mirror of it.
+
+== Format: BerryWiki
+
+The pages here are written in the
+https://github.com/metadatastician/berrywiki[BerryWiki] format, adopted so that
+the wiki gets a CherryTree/Zim-style hierarchical notebook — tree, sibling
+ordering, backlinks, tags — while the files stay plain, GitHub-renderable
+Markdown that works with or without BerryWiki.
+
+Three rules make that work:
+
+. *The metadata block must be the first non-blank content of the file.* It is
+  an HTML comment, so GitHub renders nothing. BerryWiki only recognises a block
+  in that position; anything above it is ignored.
++
+----
+<!-- berrywiki
+id: 0195b100-0000-7000-8000-000000000001
+parent: null
+position: 0
+kind: page
+tags:
+  - index
+archived: false
+-->
+----
+
+. *Hierarchy comes from the `parent` id chain, never from filenames.* The `--`
+  in `Contributing--Dev-Setup.md` is a human-friendly slug for GitHub's flat
+  page list, not a source of truth. Renaming a file does not move the page.
+
+. *Links are `[[WikiLinks]]` keyed on page name.* `[[Rust-Core]]`,
+  `[[Contributing--Dev-Setup|the setup page]]`, `[[Home#Quick commands]]`.
+
+== Layout
+
+....
+Home
+├── Architecture
+├── Rust-Core
+├── CI-and-Gates
+├── Ecosystem
+├── Contributing
+│   └── Contributing--Dev-Setup
+└── Glossary
+....
+
+`_Sidebar.md` is **generated** — do not hand-edit it.
+
+== Working on the wiki
+
+[source,bash]
+----
+# Validate tree, links, parents, cycles and duplicate ids. Exit 1 on any error.
+berrywiki check wiki
+
+# Regenerate _Sidebar.md after adding, moving or reordering a page.
+berrywiki sidebar wiki --write
+
+# Browse and edit locally (commit-on-save if wiki/ is inside a git tree).
+berrywiki serve wiki
+----
+
+`berrywiki` is built from https://github.com/metadatastician/berrywiki and needs
+Rust 1.89 or newer. It is not required to edit these files by hand.
+
+== Publishing
+
+`wiki/` is kept in this repository so the wiki is versioned, diffable and
+reviewable like any other file. To publish:
+
+[source,bash]
+----
+git clone https://github.com/hyperpolymath/blocky-writer.wiki.git /tmp/bw-wiki
+cp wiki/*.md /tmp/bw-wiki/
+cd /tmp/bw-wiki
+git add -A
+git commit -m "wiki: sync from wiki/"
+git push
+----
+
+Keep the two in step. If you change a page here and do not push, the wiki is
+stale; if you edit on GitHub and do not copy back, this directory is stale.
+Prefer editing here and pushing.
+
+== Adding a page
+
+. Create `wiki/Your-Page.md` (or `wiki/Parent--Your-Page.md`) with a metadata
+  block: a fresh `id`, the `parent` id of its parent page, a `position` among
+  its siblings, `kind: page`, and any `tags`.
+. Link it from its parent with `[[Your-Page]]`.
+. Run `berrywiki check wiki` and `berrywiki sidebar wiki --write`.
+. Push both the page and the regenerated `_Sidebar.md`.
+
+== Conventions
+
+* SPDX header as a second HTML comment, after the metadata block.
+* Every claim in the wiki should be checkable against the repository. When the
+  repository changes, change the wiki in the same PR.
+* The wiki is a navigation and context layer, not a second copy of the docs. If
+  something belongs in `docs/`, put it there and link it.

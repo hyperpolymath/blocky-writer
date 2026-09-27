@@ -62,6 +62,30 @@ See TOPOLOGY for a visual architecture map and completion dashboard.
 
 Wondering how this works? See EXPLAINME.adoc.
 
+== Ecosystem position
+
+blocky-writer is one component of the hyperpolymath *precision document suite*.
+It owns exactly one thing: **fitting and placement into fixed-layout PDF and
+application-form boxes, baselines and per-character cells designed for hand
+spacing rather than reliable computer entry.**
+
+It deliberately does *not* do any of the following, and each has an owner:
+
+* Multi-format viewing and editing — https://github.com/hyperpolymath/formatrix-docs[Formatrix Docs]
+* Multi-format conversion and precision coordination — https://github.com/hyperpolymath/docmatrix[DocMatrix]
+* OCR / metadata extraction — https://github.com/hyperpolymath/docudactyl[Docudactyl]
+* Print routing — https://github.com/hyperpolymath/presswerk[Presswerk]
+
+The versioned composition contract — including the clause that forbids any
+component from silently normalising *page geometry* — is
+https://github.com/hyperpolymath/docmatrix/issues/71[docmatrix#71]. The long-form
+boundary statement, with the full adjacent-project list, is
+`+docs/ecosystem/ECOSYSTEM.adoc+`.
+
+The project wiki (BerryWiki format) is at
+https://github.com/hyperpolymath/blocky-writer/wiki and its source lives in
+`+wiki/+`.
+
 == License
 
 SPDX-License-Identifier: CC-BY-SA-4.0 +

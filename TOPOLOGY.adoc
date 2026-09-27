@@ -1,5 +1,10 @@
 == blocky-writer — Project Topology
 
+....
+Last updated: 2026-09-27
+Status: Rust core green (fmt + 6 tests + clippy); frontend prototype, no build pipeline
+....
+
 === System Architecture
 
 ....
@@ -11,7 +16,7 @@
                                             ▼
                         ┌─────────────────────────────────────────┐
                         │           EXTENSION UI LAYER            │
-                        │    (AffineScript + React + Office.js)       │
+                        │      (AffineScript — prototype)         │
                         │  ┌───────────┐  ┌───────────────────┐  │
                         │  │ Popup UI  │  │  Content Script   │  │
                         │  └─────┬─────┘  └────────┬──────────┘  │
@@ -20,7 +25,7 @@
                                  ▼                 ▼
                         ┌─────────────────────────────────────────┐
                         │           BACKGROUND SERVICE            │
-                        │      (AffineScript, State Management)       │
+                        │      (AffineScript — prototype)         │
                         └───────────────────┬─────────────────────┘
                                             │
                                             ▼
@@ -37,34 +42,43 @@
 
                         ┌─────────────────────────────────────────┐
                         │          REPO INFRASTRUCTURE            │
-                        │  Deno-first scripts  .machine_readable/ │
-                        │  webpack.config.cjs  Containerfile      │
+                        │  .machine_readable/  Containerfile      │
+                        │  .github/workflows/  wiki/              │
                         └─────────────────────────────────────────┘
 ....
 
 === Completion Dashboard
 
+Read this as *what exists and is verified*, not as *what is written down*.
+The AffineScript layers are prototypes: the sources exist, but there is no
+compiler configuration, no package manifest and no bundle pipeline in this
+checkout, so there is nothing to build, run or release. Percentages below
+reflect working, verified code — not the presence of files.
+
 ....
 COMPONENT                          STATUS              NOTES
 ─────────────────────────────────  ──────────────────  ─────────────────────────────────
 EXTENSION LAYERS
-  Popup UI (AffineScript/React)         ██████████ 100%    Stateful forms stable
-  Background Script                 ██████████ 100%    WASM bridge active
-  Content Script                    ████████░░  80%    PDF block detection refining
+  Popup UI (AffineScript)              ██░░░░░░░░  20%    src/popup.affine prototype; no build
+  Background Script                 ██░░░░░░░░  20%    src/background.affine prototype
+  Content Script                    █░░░░░░░░░  10%    src/content.affine prototype
+  Extension bundle pipeline         ░░░░░░░░░░   0%    deno.json removed in #43; no toolchain
 
 CORE (RUST/WASM)
-  pdftool_core (WASM)               ██████████ 100%    Core logic stable
-  AcroForm Writeback                ██████████ 100%    Text/Select widgets verified
-  Error Taxonomy                    ██████████ 100%    Structured error codes active
+  pdftool_core (WASM)               ████████░░  80%    detect_blocks + fill_blocks, 6 tests green
+  AcroForm Writeback                ████████░░  80%    Tx / Ch / Btn only; no Sig
+  Ruled-line & cell detection       ░░░░░░░░░░   0%    NOT IMPLEMENTED — the "hand spacing" case
+  Error Taxonomy                    ██████████ 100%    20 stable BW_* codes
 
 REPO INFRASTRUCTURE
-  Rust CI (fmt/test/clippy)         ██████████ 100%    ci.yml rust-core job
-  Extension bundle pipeline         ░░░░░░░░░░   0%    deno.json removed in #43; no toolchain
+  Rust CI (fmt/test/clippy)         ██████████ 100%    ci.yml rust-core job — green
+  Lock Sync Gate                    ██████████ 100%    lock-sync-gate.yml — green on main
+  Documentation                     ████████░░  80%    README/TOPOLOGY/wiki corrected 2026-09-27
   .machine_readable/                ██████████ 100%    STATE.a2ml tracking
   Containerfile                     ██████████ 100%    Reproducible dev env
 
 ─────────────────────────────────────────────────────────────────────────────
-OVERALL:                            █████████░  ~90%   Production-ready extension
+OVERALL:                            █████░░░░░  ~50%   Rust core ready; extension not release-ready
 ....
 
 === Key Dependencies
@@ -72,7 +86,16 @@ OVERALL:                            █████████░  ~90%   Produ
 ....
 Block Detection ───► AcroForm Parser ───► WASM Bridge ───► Extension UI
       (Rust)              (Rust)             (JS)           (AffineScript)
+
+lopdf 0.34 ─────────► rust/pdftool_core ─────────► detect_blocks / fill_blocks
 ....
+
+=== Ecosystem
+
+See `+docs/ecosystem/ECOSYSTEM.adoc+` for the boundary statement and the
+adjacent-project list, and
+https://github.com/hyperpolymath/docmatrix/issues/71[docmatrix#71] for the
+versioned composition contract.
 
 === Update Protocol
 
@@ -86,3 +109,8 @@ This file is maintained by both humans and AI agents. When updating:
 
 Progress bars use: `+█+` (filled) and `+░+` (empty), 10 characters wide.
 Percentages: 0%, 10%, 20%, … 100% (in 10% increments).
+
+*Rule of honesty:* a bar describes **working, verified code**. A file that
+exists but cannot be compiled, run or tested is 0%, however large it is. The
+`+deno.json+` deletion in #43 (2026-08-24) is why the extension layers are low
+despite having sources.

@@ -16,58 +16,96 @@ https://semver.org/spec/v2.0.0.html[Semantic Versioning].
 
 === [Unreleased]
 
+Entries below are grouped by Keep-a-Changelog section. Raw commit subjects are
+not repeated verbatim — where a commit subject was mangled or carried an inline
+`+Authored-By:+` trailer, it has been tidied here.
+
 ==== Added
 
-* feat(crg): add crg-grade and crg-badge justfile recipes
-* feat: add wokelangiser accessibility+consent manifest
-* feat: add UX Justfile with doctor, tour, help-me, assail recipes
-* feat: add stapeln.toml layer-based container definitionfrom existing
-Containerfile to stapeln format.Chainguard base, security hardening,
-SBOM generation.-Authored-By: Claude Opus 4.6 (1M context)
-noreply@anthropic.com
-* feat: deploy UX Manifesto infrastructure
-* feat: add CLADE.a2ml — clade taxonomy declaration
-* feat: add mirror.yml workflow for GitLab/Bitbucket mirroring
+* `+wiki/+` — BerryWiki-format wiki source (tree, backlinks, tags, zero
+  JavaScript) with `+_Sidebar.md+` generated from it, and `+wiki/README.adoc+`
+  documenting the format and the publish step.
+* `+docs/ecosystem/ECOSYSTEM.adoc+` — the suite boundary statement required by
+  docmatrix#71, with the adjacent-project list and the composition contract.
+* `+.github/ISSUE_TEMPLATE/+` — `+bug_report.yml+`, `+feature_request.yml+`,
+  `+documentation.yml+` and `+config.yml+`. There were previously no issue
+  templates at all, despite `+CONTRIBUTING.md+` referencing one.
+* `+.github/PULL_REQUEST_TEMPLATE.md+` — including the "if you changed a `+uses:+`
+  line, ship the lock change" and "never silence a gate" checks.
+* `+.machine_readable/6a2/STATE.a2ml+` — `+verified+`, `+not-implemented+`,
+  `+known-red-on-main+` and `+open-decisions+` sections, replacing a bare
+  `+completion-percentage+` that had been stale since 2026-03-15.
+* UX Justfile recipes: `+doctor+`, `+tour+`, `+help-me+`, `+assail+`.
+* CRG grade recipes: `+crg-grade+`, `+crg-badge+`.
+* `+wokelangiser.toml+` accessibility and consent manifest.
+* `+stapeln.toml+` — layer-based container definition converted from the existing
+  `+Containerfile+` (Chainguard base, security hardening, SBOM generation).
+* `+CLADE.a2ml+` — clade taxonomy declaration, registered with `+gv-clade-index+`.
+* `+mirror.yml+` — GitLab/Bitbucket (and Disroot, Gitea, Codeberg, SourceHut,
+  Radicle) mirroring.
 
 ==== Fixed
 
-* fix(ci): resync actions.lock after #69/#70/#71 desync that startup-killed
-every workflow on main; re-pin codeql-action to the held v4.38.0; correct the
-dependabot codeql ignore glob; retire `core-fill-tests`/`extension-build` with
-a written determination in docs/ci/CHECK-DETERMINATIONS.adoc (#67)
-* fix(ci): sync hypatia-scan.yml to canonical (#5)
-* fix(ci): adopt canonical hypatia-scan.yml (#4)
-* fix(scorecard): enforce granular permissions and add fuzzing
-placeholder
-* fix(ci): Resolve workflow-linter self-matching and metadata issues
-* fix: SPDX headers (AGPL→PMPL), email, author name
-* fix(license): SPDX AGPL-3.0 → PMPL-1.0-or-later in dotfiles
-* fix: security hardening and CI workflow pinning
+* `+rust/pdftool_core+`: resolved the two Clippy lints that were the only thing
+  keeping the `+Rust core (tests, formatting, lint)+` job red —
+  `+clippy::map_clone+` on `+doc.get_object(*id).map(Clone::clone)+` (now
+  `+.cloned()+`) and `+clippy::unnecessary_cast+` on
+  `+Object::Real(v) => Some(*v as f32)+` (now `+Some(*v)+`). The adjacent
+  `+Object::Integer+` cast was left alone because that `+i64+` → `+f32+` cast is real.
+  (#73)
+* `+rust/pdftool_core+`: `+rustfmt+` applied so the formatting step of the
+  `+rust-core+` job passes. (e1b6225)
+* `+actions.lock+` resynchronised after the #69/#70/#71 desync that startup-killed
+  every workflow on `+main+`; `+codeql-action+` re-pinned to the held v4.38.0; the
+  Dependabot codeql ignore glob corrected to `+github/codeql-action*+`; the dead
+  `+core-fill-tests+` and `+extension-build+` jobs retired with a written
+  determination in `+docs/ci/CHECK-DETERMINATIONS.adoc+`. (#67)
+* Documentation drift: `+.github/CONTRIBUTING.md+` rewritten (it described
+  `+hyperpolymath/language-bridges+` and a repo layout that does not exist here);
+  `+TOPOLOGY.adoc+` corrected (it claimed a Deno-first toolchain and 100% frontend
+  completion); `+EXPLAINME.adoc+` corrected (it listed Deno as a technology
+  choice); `+www/.well-known/humans.txt+` corrected (it described an Idris2/Zig
+  project); `+0-AI-MANIFEST.a2ml+` broken references fixed.
+* `+docs/ci/CHECK-DETERMINATIONS.adoc+`: the `+rust-core+` row corrected — the job
+  *has* executed (run 36296845297 at `+e1b6225+`), reaching its third step with
+  `+fmt+` and `+test+` green and only Clippy red. The previous revision claimed it
+  had never run.
+* `+hypatia-scan.yml+` synced to the canonical estate version.
+* Scorecard: granular permissions enforced; fuzzing placeholder added.
+* Workflow linter self-matching and metadata issues resolved.
+* SPDX headers corrected (AGPL → PMPL) along with author name and email.
 
 ==== Changed
 
-* refactor: migrate 6SCM → 6A2 (.scm → .a2ml format)
+* `+.machine_readable/+` migrated from 6SCM to 6A2 (`+.scm+` → `+.a2ml+`).
+* `+README.adoc+` gained an *Ecosystem position* section stating the boundary and
+  linking the other suite components, satisfying the first acceptance criterion
+  of docmatrix#71.
+* CodeQL Action v3 → v4.
 
 ==== Documentation
 
-* docs: add TEST-NEEDS.md (CRG C)
-* docs: add TEST-NEEDS.md (CRG C)
-* docs: restore README.md lost in Floor Raise campaign
-* docs: add EXPLAINME.adoc — prove-it file backing README claims
-* docs: add 0-AI-MANIFEST.a2ml (RSR compliance)
+* `+TEST-NEEDS.adoc+` — CRG grade C.
+* `+EXPLAINME.adoc+` — prove-it file backing README claims.
+* `+0-AI-MANIFEST.a2ml+` — RSR compliance entry point.
+* `+REQUIRES_INITIALISATION.adoc+` — rewritten as a resolution record; all
+  inherited substitution tokens are now filled.
 
 ==== CI
 
-* ci: deploy dogfood-gate, fix hypatia-scan, add pre-commit hooks
-* ci: migrate CodeQL Action v3 → v4
-* ci: update SHA pins for codeql-action and trufflehog
-* ci: deploy missing standard workflows (10 added)
+* `+lock-sync-gate.yml+` added as the authoritative `+actions.lock+` gate; the
+  duplicate in-workflow lock job removed from `+ci.yml+` because a workflow that
+  GitHub refuses to start when the lock is broken can never report the fault it
+  exists to catch.
+* Dogfood gate deployed; pre-commit hooks added.
+* SHA pins updated for `+codeql-action+` and `+trufflehog+`.
+* Ten standard estate workflows deployed.
 
 === Pre-history
 
-Prior commits to this file’s introduction are recorded in git history
+Prior commits to this file's introduction are recorded in git history
 but not formally classified into Keep-a-Changelog sections. To backfill,
-run `+git cliff -o CHANGELOG.md+` locally using the canonical
+run `+git cliff -o CHANGELOG.adoc+` locally using the canonical
 https://github.com/hyperpolymath/standards/blob/main/templates/cliff.toml[`+cliff.toml+`]
 — this is one-shot mechanical work.
 
