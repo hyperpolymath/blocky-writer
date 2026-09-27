@@ -7,18 +7,20 @@
 [cols=",,",options="header",]
 |===
 |Category |Count |Notes
-|Test directories |1 |Location(s): /tests
-|CI workflows |15 |Running tests on GitHub Actions
-|Unit tests |Configured |AffineScript Jest/Vitest setup
+|Test directories |1 |Location(s): /tests (aspect + fuzz placeholder)
+|CI workflows |15 |`ci.yml` runs the Rust core checks; see docs/ci/CHECK-DETERMINATIONS.adoc
+|Unit tests |Implemented |Rust `pdftool_core` (`cargo test --locked`)
 |===
 
 === What’s Covered
 
-* [x] AffineScript unit tests
-* [x] JavaScript interop tests
+* [x] Rust core unit tests (block detection, `fill_blocks_*` AcroForm writeback, taxonomy errors)
+* [x] `cargo fmt --check` and `cargo clippy -D warnings` in CI
 
 === Still Missing (for CRG B+)
 
+* [ ] Extension frontend build + tests — no AffineScript/bundle toolchain in this checkout
+  (retired CI job `extension-build`; see docs/ci/CHECK-DETERMINATIONS.adoc)
 * [ ] Code coverage reports (codecov integration)
 * [ ] Detailed test documentation in CONTRIBUTING.md
 * [ ] Integration tests beyond unit tests
@@ -28,5 +30,7 @@
 
 [source,bash]
 ----
-npm run test  # or: affinescript build && npm run test
+cargo fmt --manifest-path rust/pdftool_core/Cargo.toml -- --check
+cargo test --manifest-path rust/pdftool_core/Cargo.toml --locked
+cargo clippy --manifest-path rust/pdftool_core/Cargo.toml --locked --all-targets -- -D warnings
 ----

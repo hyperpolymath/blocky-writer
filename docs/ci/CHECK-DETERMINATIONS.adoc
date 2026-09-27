@@ -1,0 +1,144 @@
+// SPDX-License-Identifier: MPL-2.0
+= CI check determinations
+:toc:
+:toc-placement: preamble
+
+The record required by the estate stopping rule (hyperpolymath/standards#968,
+#994): every CI check that has ever been red on `main` has exactly one of three
+determinations -- *fixed*, *retired*, or *exempt* -- and none is ever closed by
+muting it (`continue-on-error`, demotion to a warning, or silent removal).
+
+== Ledger
+
+[cols="2,1,1,4",options="header"]
+|===
+| Check | Determination | Date | Basis
+
+| `core-fill-tests` (CI)
+| *Retired*
+| 2026-09-27
+| Ran `deno task test:core-fill`. That task lived in `deno.json`, which #43
+  ("eradicate TypeScript and NPM/Deno configs", 2026-08-24) deleted. From that
+  commit on the job could not have passed: the task was `cargo test
+  --manifest-path rust/pdftool_core/Cargo.toml fill_blocks_`, and CI never
+  recorded a single green run of `ci.yml`. The coverage it intended is a
+  strict subset of the `rust-core` job, which runs the crate's full
+  `cargo test --locked`. Removed from `ci.yml` in #71; the lockfile was
+  brought into line in the fix for #67.
+
+| `extension-build` (CI)
+| *Retired*
+| 2026-09-27
+| Ran `deno task build:wasm` and `deno task build` (AffineScript + webpack
+  bundle). Same #43 deletion; the bundle toolchain is not in this checkout at
+  all (README "Current status"). There is nothing to build until the frontend
+  gets a reproducible pipeline. When it does, the build job comes back to
+  `ci.yml` under a new name with a new row here -- it is not "exempt", it is
+  gone until the thing it would build exists.
+
+| `rust-core` (CI)
+| *Fixed*
+| 2026-09-27
+| Replacement for both retired jobs: `cargo fmt --check`, `cargo test
+  --locked`, `cargo clippy -D warnings` on `rust/pdftool_core`. Green on the
+  fix branch for #67 (`ci.yml` was startup-dead on `main` from #71's merge
+  until that fix, so the first run that could execute it was the fix PR).
+
+| `Lock Sync Gate` / `actions.lock is in sync with the workflow YAML`
+| *Fixed*
+| 2026-09-27
+| Red on `main` from #69 (2026-09-24) onward, and the cause of every other
+  workflow on `main` reporting `startup_failure` at d50a857 -- see
+  <<desync>>. Resynchronised in the fix for #67.
+|===
+
+== Also red on `main`?
+
+Yes, for both checks named in #67, and for reasons that have nothing to do
+with the `actions.lock` cure (#66) that surfaced them:
+
+* `core-fill-tests` and `extension-build` were red on every run since #43,
+  which predates #66 by a month. #66 revived the workflow that runs them; it
+  did not break them.
+* At `main` = d50a857 (after #71) *all nine* push-triggered workflows were
+  `startup_failure` with zero jobs. That includes `CI`, so neither the retired
+  jobs nor their replacement could report at all.
+
+[[desync]]
+== Root cause of the `main` outage, and why it recurred four times
+
+GitHub refuses to start a workflow whose step-level `uses:` refs are not
+recorded, under that workflow's own path, in `.github/workflows/actions.lock`.
+The refusal is silent: `startup_failure`, jobs=0, no log. Four consecutive
+merges after #66 each rewrote a `uses:` without touching the lock:
+
+[cols="1,3,3",options="header"]
+|===
+| Merge | Rewrote | Lock impact
+
+| #68 | codeql-action `1c5b675` -> `b96794f` (true v4.38.0)
+| Lock already recorded `b96794f`; this one was in sync.
+
+| #69 (Dependabot) | codeql-action `b96794f` -> `1c5b675` (v4.38.1)
+| Killed `codeql.yml` and `hypatia-scan.yml`. Merged with `Lock Sync Gate`
+  red. Got through the codeql hold because the ignore was
+  `github/codeql-action`, which does not match the subpath dependency names
+  `github/codeql-action/init` etc. that Dependabot actually tracks.
+
+| #70 (Dependabot) | haskell-actions/setup v2.12.0 -> v2.12.1
+| Killed `casket-pages.yml`. Merged with `Lock Sync Gate` red.
+
+| #71 | `ci.yml` jobs replaced; `setup-deno` and `wasm-pack-action` no longer used
+| Killed `ci.yml` (stale entries, clause 2). No check could flag it: the
+  gate itself was already startup-dead from #69/#70.
+|===
+
+The last row is the important one. A drift merged into `main` does not only
+break the workflows that use the drifted ref -- it can take the gate down too,
+after which further drift lands unobserved. That is why the fix for #67 does
+four things rather than one.
+
+== What the fix for #67 changed
+
+. `actions.lock` resynchronised and transitively closed (verified by
+  `scripts/check-lock-sync.sh`, all four clauses): `ci.yml` entries pruned to
+  what it uses; `haskell-actions/setup@v2.12.1` recorded with its commit;
+  unreferenced alias records pruned.
+. `codeql-action` re-pinned to `b96794f` (v4.38.0) in `codeql.yml` and
+  `hypatia-scan.yml`, restoring the estate hold that #64 set and #68 re-asserted.
+  The `# v4.38.0` comment Dependabot left beside the 4.38.1 SHA was false; it
+  is now true.
+. `.github/dependabot.yml`: ignore pattern corrected to `github/codeql-action*`
+  (the estate-canonical form from hyperpolymath/standards), cadence weekly,
+  open-PR limit 2, and a header explaining the lock contract.
+. `ci.yml`: the duplicate `workflow-lock` job removed. It ran from inside a
+  workflow that GitHub refuses to start on exactly the fault it checked, so it
+  could never report. `lock-sync-gate.yml` carries no `uses:` and is the
+  authoritative gate.
+
+== Standing rules for this repository
+
+. *A red `Lock Sync Gate` is never merged over.* On a Dependabot PR it means
+  "regenerate the lock in this PR" (`gh actions-lock --no-migrate-local-actions`,
+  then hand-check job-level reusable refs and pinned SHAs, then run
+  `scripts/check-lock-sync.sh`). On any other PR it means the author changed a
+  `uses:` and must record it.
+. *Any change to a `uses:` line ships with the matching `actions.lock` change
+  in the same commit.* This includes removals: a stale lock entry is as fatal
+  as a missing one (clause 2).
+. *Retire or repair; never silence.* No `continue-on-error`, no
+  `if: false`, no deletion of a job without a row in this ledger.
+. *Required-check set.* The repository's rulesets (`Base`, `Branch-Floor`)
+  currently carry no `required_status_checks` rule, so "removed from the
+  required set" is vacuously satisfied for the retired jobs. The permanent
+  cure for rows two and three of the <<desync>> table is owner-side: add
+  `actions.lock is in sync with the workflow YAML` and
+  `Rust core (tests, formatting, lint)` as required checks on `main`. Until
+  that is done rule 1 is a convention, not an enforcement.
+
+== Review date
+
+2026-12-27, or on the first Dependabot actions PR after that date, whichever
+comes first: confirm the codeql hold is still needed (has upstream cleared
+4.38.1 estate-wide?), confirm no row above has regressed, and confirm whether
+the required-check rule has been added.

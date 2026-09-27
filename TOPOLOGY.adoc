@@ -58,7 +58,8 @@ CORE (RUST/WASM)
   Error Taxonomy                    ██████████ 100%    Structured error codes active
 
 REPO INFRASTRUCTURE
-  Deno Build Tasks                  ██████████ 100%    deno task build verified
+  Rust CI (fmt/test/clippy)         ██████████ 100%    ci.yml rust-core job
+  Extension bundle pipeline         ░░░░░░░░░░   0%    deno.json removed in #43; no toolchain
   .machine_readable/                ██████████ 100%    STATE.a2ml tracking
   Containerfile                     ██████████ 100%    Reproducible dev env
 

@@ -3,16 +3,36 @@
 # This workflow is managed by gh actions-lock.
 # This workflow is managed by gh actions-lock.
 # This workflow is managed by gh actions-lock.
+#
+# CI for the implemented part of this repository: the Rust PDF core.
+#
+# History (issue #67): this file used to carry `core-fill-tests` and
+# `extension-build`, which ran `deno task test:core-fill`, `deno task build:wasm`
+# and `deno task build`. Those tasks lived in deno.json, which #43 deleted on
+# 2026-08-24; the two jobs were red on every run from then on and were RETIRED
+# by #71. `test:core-fill` was `cargo test ... fill_blocks_`, a strict subset of
+# the `rust-core` job below. The extension bundle has no toolchain in this
+# checkout (see README "Current status"); when one lands, add its build job
+# here and record it in docs/ci/CHECK-DETERMINATIONS.adoc.
+#
+# There is deliberately NO lockfile-verification job in this file. A job that
+# checks actions.lock from inside a workflow that GitHub refuses to start when
+# actions.lock is out of sync can never report the fault it exists to catch.
+# That check lives in lock-sync-gate.yml, which carries no `uses:` at all and
+# is therefore immune to the failure it detects.
 name: CI
 permissions:
   actions: read
   contents: read
 
 on:
-
   push:
     branches: ["main"]
   pull_request:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   rust-core:
@@ -31,14 +51,3 @@ jobs:
         run: cargo test --manifest-path rust/pdftool_core/Cargo.toml --locked
       - name: Run Clippy
         run: cargo clippy --manifest-path rust/pdftool_core/Cargo.toml --locked --all-targets -- -D warnings
-
-  workflow-lock:
-    name: Verify Actions lockfile
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    steps:
-      - uses: actions/checkout@v7.0.1
-      - name: Install GNU awk
-        run: sudo apt-get update && sudo apt-get install -y gawk
-      - name: Verify workflow lockfile
-        run: ./scripts/check-lock-sync.sh
