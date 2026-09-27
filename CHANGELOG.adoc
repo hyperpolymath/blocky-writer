@@ -31,6 +31,10 @@ noreply@anthropic.com
 
 ==== Fixed
 
+* fix(ci): resync actions.lock after #69/#70/#71 desync that startup-killed
+every workflow on main; re-pin codeql-action to the held v4.38.0; correct the
+dependabot codeql ignore glob; retire `core-fill-tests`/`extension-build` with
+a written determination in docs/ci/CHECK-DETERMINATIONS.adoc (#67)
 * fix(ci): sync hypatia-scan.yml to canonical (#5)
 * fix(ci): adopt canonical hypatia-scan.yml (#4)
 * fix(scorecard): enforce granular permissions and add fuzzing

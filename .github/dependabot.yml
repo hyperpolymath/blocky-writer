@@ -1,22 +1,41 @@
-# To get started with Dependabot version updates, you'll need to specify which
-# package ecosystems to update and where the package manifests are located.
-# Please see the documentation for all configuration options:
-# https://docs.github.com/code-security/dependabot/dependabot-version-updates/configuration-options-for-the-dependabot.yml-file
+# SPDX-License-Identifier: MPL-2.0
+# Estate dependabot policy: hyperpolymath/standards docs/DEPENDABOT-POLICY.adoc
+# (standards#297). Local history that shaped this file: #63/#64/#68/#69 and
+# issue #67.
+#
+# READ BEFORE MERGING ANY PR THIS FILE PRODUCES:
+#   Dependabot rewrites `uses:` refs in the workflow YAML but CANNOT touch
+#   .github/workflows/actions.lock. A merged bump therefore desyncs the lock,
+#   and GitHub then refuses EVERY affected workflow at startup (jobs=0,
+#   "startup_failure", no logs). That is what killed all 9 workflows on main
+#   after #69/#70 (issue #67). The `Lock Sync Gate` check goes red on exactly
+#   such a PR; a red gate on a dependabot PR means "regenerate the lock in the
+#   same PR", never "merge anyway". See docs/ci/CHECK-DETERMINATIONS.adoc.
 
 version: 2
 updates:
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
-      interval: "daily"
+      # Weekly, not daily: every actions bump needs a paired lockfile
+      # regeneration by a human, so the cadence is set to what a human
+      # reviews, not what a bot can emit (estate policy).
+      interval: "weekly"
     groups:
       actions:
         patterns:
           - "*"
+    open-pull-requests-limit: 2
     ignore:
-      # HOLD: github/codeql-action at v4.38.0 (SHA-pinned). v4.38.1 fails
-      # GitHub workflow-startup validation estate-wide (nexia-list#100;
-      # SHA-form re-bump bypassed versions-scoped ignores - nexia-list#101).
-      # Hold until upstream clears 4.38.1 or a new release verifies green.
-      - dependency-name: "github/codeql-action"
-
+      # HOLD: github/codeql-action at v4.38.0 (SHA-pinned b96794f0). v4.38.1
+      # (1c5b6756) fails GitHub workflow-startup validation estate-wide
+      # (nexia-list#100). Hold until upstream clears 4.38.1 or a newer release
+      # verifies green; revisit deliberately, not weekly.
+      #
+      # The trailing * is load-bearing. Workflows reference the SUBPATH actions
+      # (github/codeql-action/init, /analyze, /upload-sarif) and Dependabot
+      # treats each subpath as its own dependency name -- so the previous bare
+      # "github/codeql-action" entry matched NONE of them. That is how #69
+      # re-bumped 4.38.0 -> 4.38.1 straight through the hold that #64 set and
+      # #68 re-asserted.
+      - dependency-name: "github/codeql-action*"
