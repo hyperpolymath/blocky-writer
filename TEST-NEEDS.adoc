@@ -1,6 +1,9 @@
-== TEST-NEEDS.md — blocky-writer
+// SPDX-License-Identifier: MPL-2.0
+== TEST-NEEDS.adoc — blocky-writer
 
 === CRG Grade: C — ACHIEVED 2026-04-04
+
+Last reviewed: 2026-09-27.
 
 === Current Test State
 
@@ -8,23 +11,33 @@
 |===
 |Category |Count |Notes
 |Test directories |1 |Location(s): /tests (aspect + fuzz placeholder)
-|CI workflows |15 |`ci.yml` runs the Rust core checks; see docs/ci/CHECK-DETERMINATIONS.adoc
-|Unit tests |Implemented |Rust `pdftool_core` (`cargo test --locked`)
+|CI workflows |14 |`.github/workflows/*.yml`. `ci.yml` runs the Rust core checks; `actions.lock` is a file, not a workflow. See docs/ci/CHECK-DETERMINATIONS.adoc
+|Unit tests |6 |Rust `pdftool_core` — `cargo test --manifest-path rust/pdftool_core/Cargo.toml --locked`
 |===
 
-=== What’s Covered
+=== What's Covered
 
-* [x] Rust core unit tests (block detection, `fill_blocks_*` AcroForm writeback, taxonomy errors)
-* [x] `cargo fmt --check` and `cargo clippy -D warnings` in CI
+* [x] Rust core unit tests (block detection, `fill_blocks_*` AcroForm writeback for
+  `Tx`/`Ch`/`Btn` fields, taxonomy errors) — 6 tests, all green on `main` at `e1b6225`
+* [x] `cargo fmt -- --check` in CI — green
+* [x] `cargo clippy --all-targets -- -D warnings` in CI — green (the two remaining
+  lints were fixed in #73)
+* [x] `actions.lock` synchronisation gate (`lock-sync-gate.yml`) — green on `main`
 
 === Still Missing (for CRG B+)
 
 * [ ] Extension frontend build + tests — no AffineScript/bundle toolchain in this checkout
   (retired CI job `extension-build`; see docs/ci/CHECK-DETERMINATIONS.adoc)
 * [ ] Code coverage reports (codecov integration)
-* [ ] Detailed test documentation in CONTRIBUTING.md
-* [ ] Integration tests beyond unit tests
+* [ ] Detailed test documentation in `.github/CONTRIBUTING.md` — the file now exists and
+  documents how to run the core checks, but there is no test-authoring guide
+* [ ] Integration tests beyond unit tests — in particular, no test loads a real-world
+  AcroForm PDF from disk; the fixture is synthesised in `mod tests`
+* [ ] Property tests for the field walkers (`collect_field_ids`, `field_full_name`,
+  `field_type`) — these recurse and are cycle-guarded, which is exactly the shape
+  property tests pay off on
 * [ ] Performance benchmarking suite
+* [ ] Ruled-line, per-character-cell and baseline detection — unimplemented, so untestable
 
 === Run Tests
 
@@ -34,3 +47,6 @@ cargo fmt --manifest-path rust/pdftool_core/Cargo.toml -- --check
 cargo test --manifest-path rust/pdftool_core/Cargo.toml --locked
 cargo clippy --manifest-path rust/pdftool_core/Cargo.toml --locked --all-targets -- -D warnings
 ----
+
+If you cannot run these — no Rust toolchain, no crates.io access — say so in the
+PR rather than implying you did. CI is the only authority on green.

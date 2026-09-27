@@ -5,20 +5,21 @@
 
 The README makes claims. This file backs them up.
 
-[quote, README]
-____
-See the link:README.adoc[README] for details.
-____
-
 == Technology Choices
 
 [cols="1,2"]
 |===
 | Technology | Learn More
 
-| **Deno** | https://deno.land
-| **AffineScript** | https://affinescript-lang.org
+| **Rust** | https://www.rust-lang.org
+| **lopdf** | https://crates.io/crates/lopdf — PDF object model, parsing, serialisation
+| **wasm-bindgen** | https://rustwasm.github.io/wasm-bindgen — the export surface
+| **AffineScript** | https://affinescript-lang.org — the frontend language (prototype; no toolchain here)
 |===
+
+NOTE: Deno is *not* used. `deno.json` and every `deno task` were removed in #43
+(2026-08-24). The `deno.lock` file still in the tree is a leftover, not a
+declaration of anything.
 
 == File Map
 
@@ -26,9 +27,41 @@ ____
 |===
 | Path | What's There
 
-| `src/` | Source code
-| `lib/` | Library code
-| `test(s)/` | Test suite
+| `rust/pdftool_core/src/lib.rs` | The whole core: `detect_blocks`, `fill_blocks`, the field walkers, the `BW_*` error taxonomy, and 6 unit tests. ~1030 lines.
+| `src/*.affine` | AffineScript prototype: popup, content script, background script, `core/PdfTool`, `core/Storage`, `core/ProvenMount`, `components/Block`, `components/FormFiller`. Not buildable in this checkout.
+| `public/` | `manifest.json`, `popup.html`, icons.
+| `tests/aspect/` | Aspect-oriented test shell script.
+| `tests/fuzz/` | Placeholder only.
+| `scripts/build-wasm.sh` | WASM package build. Not run by CI; output unconsumed.
+| `scripts/check-lock-sync.sh` | The `actions.lock` gate (needs `gawk`).
+| `wiki/` | BerryWiki-format wiki source. See `wiki/README.adoc`.
+| `docs/ci/CHECK-DETERMINATIONS.adoc` | The CI ledger and its standing rules.
+| `docs/ecosystem/ECOSYSTEM.adoc` | Suite boundary and adjacent projects.
+| `.machine_readable/` | Machine-readable state, contractiles, clade declaration.
+| `www/.well-known/` | `ai.txt`, `humans.txt`, `security.txt`.
+|===
+
+== Claims, and where they are checked
+
+[cols="1,2",options="header"]
+|===
+| Claim in the README | Where it is checked
+
+| The Rust core is implemented and has unit tests
+| `cargo test --manifest-path rust/pdftool_core/Cargo.toml --locked` — 6 tests, including AcroForm writeback for text/select and button widgets and the structured error taxonomy.
+
+| `cargo fmt`, `cargo test` and `cargo clippy -D warnings` all pass
+| `.github/workflows/ci.yml`, job `Rust core (tests, formatting, lint)`. As of 2026-09-27 this job is green on `main` at `e1b6225`.
+
+| The frontend is a prototype with no build pipeline
+| There is no AffineScript compiler configuration and no JavaScript package manifest in the tree. `deno.json` was deleted by #43.
+
+| `fill_blocks` performs AcroForm-aware writeback
+| `apply_field_value` in `rust/pdftool_core/src/lib.rs`, dispatched on field type `Tx` / `Ch` / `Btn`.
+
+| Errors carry structured codes
+| `CoreErrorPayload { code, message, context }`; 20 `BW_*` codes.
+
 |===
 
 == Questions?
