@@ -37,16 +37,26 @@ muting it (`continue-on-error`, demotion to a warning, or silent removal).
   gone until the thing it would build exists.
 
 | `rust-core` (CI)
-| *Fixed -- verification pending an owner-actor run*
+| *Fixed -- awaiting one owner-triggered green run on `main`*
 | 2026-09-27
-| Replacement for both retired jobs: `cargo fmt --check`, `cargo test
-  --locked`, `cargo clippy -D warnings` on `rust/pdftool_core`. It has never
-  once executed: every `ci.yml` run before #71 died on the Deno tasks, #71's
-  own PR and merge were bot-triggered and refused at startup (<<actor>>), and
-  the fix PR for #67 is bot-triggered too. The first run that can execute it
-  is one triggered by `hyperpolymath` (re-run, close/reopen, or push). If that
-  run is red, the crate has a real defect and this row becomes a repair item;
-  it is not closed until a green run on `main` exists.
+| Replacement for both retired jobs: `cargo fmt -- --check`, `cargo test
+  --locked`, `cargo clippy --all-targets -- -D warnings` on
+  `rust/pdftool_core`. It did execute once, contrary to the previous revision
+  of this row: run 36296845297 (push, `e1b6225`, actor `hyperpolymath`) got as
+  far as three of its steps -- *Check formatting* `success`, *Run unit tests*
+  `success` (6/6), *Run Clippy* `failure`. Clippy was the only red step and it
+  reported exactly two lints, both in `rust/pdftool_core/src/lib.rs`:
+  `clippy::map_clone` on `doc.get_object(*id).map(Clone::clone)` and
+  `clippy::unnecessary_cast` on `Object::Real(v) => Some(*v as f32)`. Both are
+  repaired in #73 (`.cloned()` and `Some(*v)` respectively); neither repair
+  weakens the gate, and the adjacent `Object::Integer(v) => Some(*v as f32)`
+  is deliberately left alone because that `i64` -> `f32` cast is real. The job
+  has *not* run with the repair in it: every run on #73's branch is
+  bot-triggered and refused at startup (<<actor>>), so the step is verified by
+  inspection only. This row therefore stays open until one run triggered by
+  `hyperpolymath` is green on `main`; if that run is red, the crate has a real
+  defect and this row becomes a repair item. It is not closed until such a run
+  exists.
 
 | `Lock Sync Gate` / `actions.lock is in sync with the workflow YAML`
 | *Fixed*

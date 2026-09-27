@@ -48,7 +48,7 @@ fn core_error_to_js(payload: CoreErrorPayload) -> JsValue {
 
 fn resolve_object(doc: &Document, obj: &Object) -> Result<Object, lopdf::Error> {
     match obj {
-        Object::Reference(id) => doc.get_object(*id).map(Clone::clone),
+        Object::Reference(id) => doc.get_object(*id).cloned(),
         _ => Ok(obj.clone()),
     }
 }
@@ -56,7 +56,7 @@ fn resolve_object(doc: &Document, obj: &Object) -> Result<Object, lopdf::Error> 
 fn object_to_number(obj: &Object) -> Option<f32> {
     match obj {
         Object::Integer(v) => Some(*v as f32),
-        Object::Real(v) => Some(*v as f32),
+        Object::Real(v) => Some(*v),
         _ => None,
     }
 }
