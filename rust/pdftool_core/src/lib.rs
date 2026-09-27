@@ -143,7 +143,12 @@ fn object_as_reference(obj: &Object) -> Option<ObjectId> {
     }
 }
 
-fn get_dict<'a>(doc: &'a Document, id: ObjectId, code: &'static str, context: &str) -> CoreResult<&'a Dictionary> {
+fn get_dict<'a>(
+    doc: &'a Document,
+    id: ObjectId,
+    code: &'static str,
+    context: &str,
+) -> CoreResult<&'a Dictionary> {
     let object = doc
         .get_object(id)
         .map_err(|err| core_error_with_context(code, err.to_string(), Some(context.to_owned())))?;
@@ -178,10 +183,13 @@ fn is_widget_object(doc: &Document, id: ObjectId) -> bool {
 }
 
 fn root_catalog_id(doc: &Document) -> CoreResult<ObjectId> {
-    let root = doc
-        .trailer
-        .get(b"Root")
-        .map_err(|err| core_error_with_context("BW_PDF_ROOT_MISSING", err.to_string(), Some("trailer.Root".into())))?;
+    let root = doc.trailer.get(b"Root").map_err(|err| {
+        core_error_with_context(
+            "BW_PDF_ROOT_MISSING",
+            err.to_string(),
+            Some("trailer.Root".into()),
+        )
+    })?;
     object_as_reference(root).ok_or_else(|| {
         core_error_with_context(
             "BW_PDF_ROOT_INVALID",
@@ -198,7 +206,12 @@ fn ensure_acroform_object(doc: &mut Document, catalog_id: ObjectId) -> CoreResul
     }
 
     let form_source = {
-        let catalog = get_dict(doc, catalog_id, "BW_FORM_CATALOG_INVALID", "catalog dictionary")?;
+        let catalog = get_dict(
+            doc,
+            catalog_id,
+            "BW_FORM_CATALOG_INVALID",
+            "catalog dictionary",
+        )?;
         let acro_form = catalog.get(b"AcroForm").map_err(|err| {
             core_error_with_context(
                 "BW_FORM_MISSING_ACROFORM",
@@ -223,14 +236,24 @@ fn ensure_acroform_object(doc: &mut Document, catalog_id: ObjectId) -> CoreResul
         FormSource::Ref(id) => Ok(id),
         FormSource::Inline(dict) => {
             let form_id = doc.add_object(Object::Dictionary(dict));
-            let catalog = get_dict_mut(doc, catalog_id, "BW_FORM_CATALOG_INVALID", "catalog dictionary")?;
+            let catalog = get_dict_mut(
+                doc,
+                catalog_id,
+                "BW_FORM_CATALOG_INVALID",
+                "catalog dictionary",
+            )?;
             catalog.set(b"AcroForm", Object::Reference(form_id));
             Ok(form_id)
         }
     }
 }
 
-fn collect_field_ids(doc: &Document, source: &Object, out: &mut Vec<ObjectId>, seen: &mut HashSet<ObjectId>) {
+fn collect_field_ids(
+    doc: &Document,
+    source: &Object,
+    out: &mut Vec<ObjectId>,
+    seen: &mut HashSet<ObjectId>,
+) {
     match source {
         Object::Reference(id) => {
             if !seen.insert(*id) {
@@ -308,7 +331,12 @@ fn field_type(doc: &Document, field_id: ObjectId, depth: usize) -> Option<String
     }
 }
 
-fn collect_widget_ids_for_field(doc: &Document, source: &Object, out: &mut Vec<ObjectId>, seen: &mut HashSet<ObjectId>) {
+fn collect_widget_ids_for_field(
+    doc: &Document,
+    source: &Object,
+    out: &mut Vec<ObjectId>,
+    seen: &mut HashSet<ObjectId>,
+) {
     match source {
         Object::Reference(id) => {
             if !seen.insert(*id) {
@@ -375,7 +403,10 @@ fn describe_field(doc: &Document, field_id: ObjectId) -> FieldDescriptor {
     }
 }
 
-fn field_input_value(descriptor: &FieldDescriptor, fields: &HashMap<String, String>) -> Option<String> {
+fn field_input_value(
+    descriptor: &FieldDescriptor,
+    fields: &HashMap<String, String>,
+) -> Option<String> {
     if let Some(full_name) = &descriptor.full_name {
         if let Some(value) = fields.get(full_name) {
             return Some(value.clone());
@@ -416,7 +447,11 @@ fn set_widget_as(doc: &mut Document, widget_id: ObjectId, value: Vec<u8>) -> Cor
     Ok(())
 }
 
-fn set_field_text_value(doc: &mut Document, descriptor: &FieldDescriptor, value: &str) -> CoreResult<()> {
+fn set_field_text_value(
+    doc: &mut Document,
+    descriptor: &FieldDescriptor,
+    value: &str,
+) -> CoreResult<()> {
     let field = get_dict_mut(
         doc,
         descriptor.id,
@@ -436,7 +471,11 @@ fn is_falsey(value: &str) -> bool {
     matches!(value, "" | "false" | "no" | "off" | "0" | "unchecked")
 }
 
-fn set_button_value(doc: &mut Document, descriptor: &FieldDescriptor, raw_value: &str) -> CoreResult<()> {
+fn set_button_value(
+    doc: &mut Document,
+    descriptor: &FieldDescriptor,
+    raw_value: &str,
+) -> CoreResult<()> {
     let normalized = raw_value.trim().to_ascii_lowercase();
 
     let widget_states: Vec<(ObjectId, Vec<u8>)> = descriptor
@@ -465,8 +504,14 @@ fn set_button_value(doc: &mut Document, descriptor: &FieldDescriptor, raw_value:
         } else {
             return Err(core_error_with_context(
                 "BW_FILL_BUTTON_VALUE_INVALID",
-                format!("button value '{}' does not match available widget states", raw_value),
-                descriptor.full_name.clone().or(descriptor.partial_name.clone()),
+                format!(
+                    "button value '{}' does not match available widget states",
+                    raw_value
+                ),
+                descriptor
+                    .full_name
+                    .clone()
+                    .or(descriptor.partial_name.clone()),
             ));
         }
     } else if is_truthy(&normalized) {
@@ -488,7 +533,8 @@ fn set_button_value(doc: &mut Document, descriptor: &FieldDescriptor, raw_value:
                 .and_then(|id| widget_on_state(doc, *id))
                 .unwrap_or_else(|| b"Yes".to_vec());
             for widget_id in &descriptor.widget_ids {
-                let widget_value = widget_on_state(doc, *widget_id).unwrap_or_else(|| field_value.clone());
+                let widget_value =
+                    widget_on_state(doc, *widget_id).unwrap_or_else(|| field_value.clone());
                 set_widget_as(doc, *widget_id, widget_value)?;
             }
         }
@@ -508,7 +554,11 @@ fn set_button_value(doc: &mut Document, descriptor: &FieldDescriptor, raw_value:
     Ok(())
 }
 
-fn apply_field_value(doc: &mut Document, descriptor: &FieldDescriptor, value: &str) -> CoreResult<()> {
+fn apply_field_value(
+    doc: &mut Document,
+    descriptor: &FieldDescriptor,
+    value: &str,
+) -> CoreResult<()> {
     let field_type = descriptor
         .field_type
         .clone()
@@ -520,7 +570,10 @@ fn apply_field_value(doc: &mut Document, descriptor: &FieldDescriptor, value: &s
         other => Err(core_error_with_context(
             "BW_FILL_UNSUPPORTED_FIELD_TYPE",
             format!("unsupported PDF form field type '{}'", other),
-            descriptor.full_name.clone().or(descriptor.partial_name.clone()),
+            descriptor
+                .full_name
+                .clone()
+                .or(descriptor.partial_name.clone()),
         )),
     }
 }
@@ -530,29 +583,30 @@ fn detect_blocks_impl(pdf_data: &[u8]) -> CoreResult<Vec<Block>> {
         return Err(core_error("BW_PDF_EMPTY", "empty PDF payload"));
     }
 
-    let doc = Document::load_mem(pdf_data)
-        .map_err(|err| core_error_with_context("BW_PDF_INVALID", err.to_string(), Some("Document::load_mem".into())))?;
+    let doc = Document::load_mem(pdf_data).map_err(|err| {
+        core_error_with_context(
+            "BW_PDF_INVALID",
+            err.to_string(),
+            Some("Document::load_mem".into()),
+        )
+    })?;
 
     let mut blocks = Vec::<Block>::new();
     for (page_number, page_id) in doc.get_pages() {
-        let page_obj = doc
-            .get_object(page_id)
-            .map_err(|err| {
-                core_error_with_context(
-                    "BW_PDF_PAGE_READ_FAILED",
-                    err.to_string(),
-                    Some(format!("page {}", page_number)),
-                )
-            })?;
-        let page_dict = page_obj
-            .as_dict()
-            .map_err(|err| {
-                core_error_with_context(
-                    "BW_PDF_PAGE_INVALID",
-                    err.to_string(),
-                    Some(format!("page {}", page_number)),
-                )
-            })?;
+        let page_obj = doc.get_object(page_id).map_err(|err| {
+            core_error_with_context(
+                "BW_PDF_PAGE_READ_FAILED",
+                err.to_string(),
+                Some(format!("page {}", page_number)),
+            )
+        })?;
+        let page_dict = page_obj.as_dict().map_err(|err| {
+            core_error_with_context(
+                "BW_PDF_PAGE_INVALID",
+                err.to_string(),
+                Some(format!("page {}", page_number)),
+            )
+        })?;
 
         let annots_obj = match page_dict.get(b"Annots") {
             Ok(obj) => obj,
@@ -605,8 +659,13 @@ fn fill_blocks_impl(pdf_data: &[u8], field_values: HashMap<String, String>) -> C
         return Err(core_error("BW_PDF_EMPTY", "empty PDF payload"));
     }
 
-    let mut doc = Document::load_mem(pdf_data)
-        .map_err(|err| core_error_with_context("BW_PDF_INVALID", err.to_string(), Some("Document::load_mem".into())))?;
+    let mut doc = Document::load_mem(pdf_data).map_err(|err| {
+        core_error_with_context(
+            "BW_PDF_INVALID",
+            err.to_string(),
+            Some("Document::load_mem".into()),
+        )
+    })?;
 
     let catalog_id = root_catalog_id(&doc)?;
     let acroform_id = ensure_acroform_object(&mut doc, catalog_id)?;
@@ -628,9 +687,16 @@ fn fill_blocks_impl(pdf_data: &[u8], field_values: HashMap<String, String>) -> C
             "BW_FORM_ACROFORM_INVALID",
             "AcroForm dictionary",
         )?;
-        acroform.get(b"Fields").map_err(|err| {
-            core_error_with_context("BW_FORM_FIELDS_MISSING", err.to_string(), Some("AcroForm.Fields".into()))
-        })?.clone()
+        acroform
+            .get(b"Fields")
+            .map_err(|err| {
+                core_error_with_context(
+                    "BW_FORM_FIELDS_MISSING",
+                    err.to_string(),
+                    Some("AcroForm.Fields".into()),
+                )
+            })?
+            .clone()
     };
 
     let mut field_ids = Vec::new();
@@ -666,8 +732,13 @@ fn fill_blocks_impl(pdf_data: &[u8], field_values: HashMap<String, String>) -> C
     }
 
     let mut output = Vec::new();
-    doc.save_to(&mut output)
-        .map_err(|err| core_error_with_context("BW_FILL_SAVE_FAILED", err.to_string(), Some("Document::save_to".into())))?;
+    doc.save_to(&mut output).map_err(|err| {
+        core_error_with_context(
+            "BW_FILL_SAVE_FAILED",
+            err.to_string(),
+            Some("Document::save_to".into()),
+        )
+    })?;
 
     Ok(output)
 }
@@ -675,8 +746,13 @@ fn fill_blocks_impl(pdf_data: &[u8], field_values: HashMap<String, String>) -> C
 #[wasm_bindgen]
 pub fn detect_blocks(pdf_data: &[u8]) -> Result<JsValue, JsValue> {
     let blocks = detect_blocks_impl(pdf_data).map_err(core_error_to_js)?;
-    serde_wasm_bindgen::to_value(&blocks)
-        .map_err(|err| core_error_to_js(core_error_with_context("BW_SERIALIZATION_ERROR", err.to_string(), Some("detect_blocks".into()))))
+    serde_wasm_bindgen::to_value(&blocks).map_err(|err| {
+        core_error_to_js(core_error_with_context(
+            "BW_SERIALIZATION_ERROR",
+            err.to_string(),
+            Some("detect_blocks".into()),
+        ))
+    })
 }
 
 #[wasm_bindgen]
@@ -693,13 +769,14 @@ pub fn fill_blocks(
         ))
     })?;
 
-    let field_values: HashMap<String, String> = serde_wasm_bindgen::from_value(fields).map_err(|err| {
-        core_error_to_js(core_error_with_context(
-            "BW_FIELDS_PAYLOAD_INVALID",
-            err.to_string(),
-            Some("fill_blocks fields argument".into()),
-        ))
-    })?;
+    let field_values: HashMap<String, String> =
+        serde_wasm_bindgen::from_value(fields).map_err(|err| {
+            core_error_to_js(core_error_with_context(
+                "BW_FIELDS_PAYLOAD_INVALID",
+                err.to_string(),
+                Some("fill_blocks fields argument".into()),
+            ))
+        })?;
     let output = fill_blocks_impl(pdf_data, field_values).map_err(core_error_to_js)?;
     Ok(js_sys::Uint8Array::from(output.as_slice()))
 }
@@ -720,7 +797,10 @@ mod tests {
     fn assert_error_code(result: CoreResult<Vec<u8>>, expected_code: &str) {
         let payload = result.expect_err("expected fill_blocks to fail");
         assert_eq!(payload.code, expected_code);
-        assert!(!payload.message.is_empty(), "error message should not be empty");
+        assert!(
+            !payload.message.is_empty(),
+            "error message should not be empty"
+        );
     }
 
     fn make_fixture_pdf() -> Vec<u8> {
@@ -856,8 +936,7 @@ mod tests {
             "Pages" => Object::Reference(pages_id),
             "AcroForm" => Object::Reference(acroform_id),
         };
-        doc.objects
-            .insert(catalog_id, Object::Dictionary(catalog));
+        doc.objects.insert(catalog_id, Object::Dictionary(catalog));
         doc.trailer.set(b"Root", Object::Reference(catalog_id));
 
         let mut bytes = Vec::new();
@@ -934,10 +1013,17 @@ mod tests {
         fields.insert("Consent".to_string(), "true".to_string());
         fields.insert("Choice".to_string(), "A".to_string());
 
-        let output_bytes = fill_blocks_impl(&input_pdf, fields).expect("fixture fields should be fillable");
+        let output_bytes =
+            fill_blocks_impl(&input_pdf, fields).expect("fixture fields should be fillable");
 
-        assert!(!output_bytes.is_empty(), "filled PDF payload should not be empty");
-        assert_ne!(output_bytes, input_pdf, "filled PDF should differ from input bytes");
+        assert!(
+            !output_bytes.is_empty(),
+            "filled PDF payload should not be empty"
+        );
+        assert_ne!(
+            output_bytes, input_pdf,
+            "filled PDF should differ from input bytes"
+        );
         Document::load_mem(&output_bytes).expect("filled payload should remain a valid PDF");
     }
 }
