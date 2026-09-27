@@ -1,6 +1,10 @@
 # SPDX-License-Identifier: MPL-2.0
 # ECOSYSTEM.a2ml — Ecosystem position
 # Converted from ECOSYSTEM.scm on 2026-03-15
+# Expanded 2026-09-27 to carry the suite boundary, so machine readers get it
+# without parsing prose. The authoritative, versioned contract is
+# https://github.com/hyperpolymath/docmatrix/issues/71 — if this file and that
+# issue disagree, the issue wins and this file is stale.
 
 [metadata]
 project = "blocky-writer"
@@ -8,3 +12,43 @@ ecosystem = "hyperpolymath"
 
 [position]
 type = "component"
+suite = "precision document suite"
+contract = "https://github.com/hyperpolymath/docmatrix/issues/71"
+contract-owner = "hyperpolymath/docmatrix"
+
+[boundary]
+owns = "fitting and placement into fixed-layout PDF and application-form boxes, baselines and per-character cells designed for hand spacing"
+does-not-own = [
+  "multi-format viewing and editing — hyperpolymath/formatrix-docs",
+  "multi-format conversion and precision coordination — hyperpolymath/docmatrix",
+  "OCR, NER and metadata extraction — hyperpolymath/docudactyl",
+  "print routing — hyperpolymath/presswerk",
+  "cross-document consistency reconciliation — hyperpolymath/recon-silly-ation",
+  "capability-bounded critical execution — ForthWall, proposed and unbuilt",
+]
+hard-constraint = "never silently normalise page geometry — composition contract clause 4"
+
+[suite]
+docmatrix = "multi-format conversion and precision coordination"
+formatrix-docs = "tabbed multi-format viewing and editing"
+blocky-writer = "fixed-layout PDF and application-form placement (this repo)"
+forthwall = "proposed capability-bounded execution layer — not implemented"
+
+[adjacent]
+affinescript = "hyperpolymath/affinescript — frontend language, real consumer"
+docudactyl = "hyperpolymath/docudactyl — OCR/NER/metadata extraction"
+dotmatrix-fileprinter = "hyperpolymath/dotmatrix-fileprinter — filesystem-side sibling"
+presswerk = "hyperpolymath/presswerk — print routing, downstream of a filled PDF"
+recon-silly-ation = "hyperpolymath/recon-silly-ation — cross-document reconciler"
+universal-language-server-plugin = "hyperpolymath/universal-language-server-plugin — overlaps docmatrix's remit"
+gv-clade-index = "hyperpolymath/gv-clade-index — taxonomy registry; CLADE.a2ml registered here"
+deed-ecosystem = "hyperpolymath/deed-ecosystem — .deed manifest format"
+standards = "hyperpolymath/standards — estate governance"
+ddraig-ssg = "hyperpolymath/ddraig-ssg — Pages SSG (Idris 2), one of two, undecided"
+casket-ssg = "hyperpolymath/casket-ssg — Pages SSG (Haskell), one of two, undecided"
+berrywiki = "metadatastician/berrywiki — this project's wiki format and tooling"
+rsr-template-repo = "hyperpolymath/rsr-template-repo — the template this repo was minted from"
+
+[communication]
+norm = "each repo states its own boundary in its README and links the others; a short issue is filed on a neighbour when a status change unblocks or affects it"
+no-standing-integration-programme = true

@@ -1,0 +1,164 @@
+// SPDX-License-Identifier: MPL-2.0
+= Ecosystem position — blocky-writer
+:toc:
+:toc-placement: preamble
+:icons: font
+
+This file exists because of an acceptance criterion in
+https://github.com/hyperpolymath/docmatrix/issues/71[docmatrix#71]:
+
+[quote]
+____
+Each repository README and GitHub description states its own boundary and links
+to the other optional components.
+____
+
+It is the long-form version of the boundary statement in the README. The
+authoritative, versioned contract is docmatrix#71 itself — if the two disagree,
+docmatrix#71 wins and this file is the thing that is stale.
+
+== What blocky-writer is
+
+A Mozilla Firefox extension for fitting and placing content into
+**fixed-layout PDF and application-form boxes, baselines and per-character
+cells** — the kind that were designed for hand spacing rather than reliable
+computer entry.
+
+Concretely, today: an AcroForm field walker and writeback engine in Rust
+(`rust/pdftool_core`), compiled to WASM, with two exported functions
+(`detect_blocks`, `fill_blocks`) and a structured `BW_*` error taxonomy.
+
+== What blocky-writer is not
+
+* *Not a document viewer or editor.* Tabbed multi-format viewing and editing is
+  https://github.com/hyperpolymath/formatrix-docs[Formatrix Docs].
+* *Not a conversion engine.* Multi-format conversion and precision
+  coordination is https://github.com/hyperpolymath/docmatrix[DocMatrix].
+* *Not an OCR or extraction pipeline.* That is
+  https://github.com/hyperpolymath/docudactyl[Docudactyl].
+* *Not a print router.* That is https://github.com/hyperpolymath/presswerk[Presswerk].
+* *Not a cross-document consistency reconciler.* That is
+  https://github.com/hyperpolymath/recon-silly-ation[recon-silly-ation].
+* *Not a general PDF library.* It fills forms; it does not render, typeset or
+  lay out pages.
+* *Not ForthWall.* ForthWall is a proposed, unbuilt, capability-bounded
+  execution layer. It is never a mandatory end-user product.
+
+== The suite
+
+[cols="1,2,2",options="header"]
+|===
+| Project | Owns | Repo
+
+| blocky-writer
+| Fixed-layout PDF and application-form placement
+| https://github.com/hyperpolymath/blocky-writer[this repo]
+
+| DocMatrix
+| Multi-format conversion and precision coordination for the suite
+| https://github.com/hyperpolymath/docmatrix[hyperpolymath/docmatrix]
+
+| Formatrix Docs
+| Tabbed viewing/editing of one logical document across TXT, tabular text,
+  Markdown, AsciiDoc, Djot, DEED, Org, reStructuredText and Typst
+| https://github.com/hyperpolymath/formatrix-docs[hyperpolymath/formatrix-docs]
+
+| ForthWall
+| Optional capability-bounded execution layer for critical operations
+  (_proposed, not implemented_)
+| —
+
+|===
+
+== Adjacent, not in the suite
+
+These are separate projects with their own boundaries. They are listed because
+blocky-writer plausibly touches them, not because anyone has agreed a contract.
+
+[cols="1,2,2",options="header"]
+|===
+| Project | Why it is adjacent | Repo
+
+| AffineScript
+| The language `src/*.affine` targets. blocky-writer is a real consumer.
+| https://github.com/hyperpolymath/affinescript[hyperpolymath/affinescript]
+
+| Docudactyl
+| OCR, NER and metadata extraction — a plausible future source of field labels.
+| https://github.com/hyperpolymath/docudactyl[hyperpolymath/docudactyl]
+
+| dotmatrix-fileprinter
+| Sibling in the "matrix" naming line; filesystem-side manipulation.
+| https://github.com/hyperpolymath/dotmatrix-fileprinter[hyperpolymath/dotmatrix-fileprinter]
+
+| Presswerk
+| High-assurance local print routing; downstream of a filled PDF.
+| https://github.com/hyperpolymath/presswerk[hyperpolymath/presswerk]
+
+| recon-silly-ation
+| Cross-document consistency reconciler. Distinct from ForthWall.
+| https://github.com/hyperpolymath/recon-silly-ation[hyperpolymath/recon-silly-ation]
+
+| universal-language-server-plugin
+| Universal document conversion across editors; overlaps DocMatrix's remit.
+| https://github.com/hyperpolymath/universal-language-server-plugin[hyperpolymath/universal-language-server-plugin]
+
+| gv-clade-index
+| Taxonomy registry. `.machine_readable/CLADE.a2ml` registers this repo there.
+| https://github.com/hyperpolymath/gv-clade-index[hyperpolymath/gv-clade-index]
+
+| deed-ecosystem / standards
+| Governance and the `.deed` manifest format.
+| https://github.com/hyperpolymath/deed-ecosystem[deed-ecosystem] /
+  https://github.com/hyperpolymath/standards[standards]
+
+| ddraig-ssg / casket-ssg
+| The two SSGs behind the Pages workflows (see the conflict noted in
+  link:../ci/CHECK-DETERMINATIONS.adoc[the CI ledger]).
+| https://github.com/hyperpolymath/ddraig-ssg[ddraig-ssg] /
+  https://github.com/hyperpolymath/casket-ssg[casket-ssg]
+
+| BerryWiki
+| The format and tooling used by this project's wiki.
+| https://github.com/metadatastician/berrywiki[metadatastician/berrywiki]
+
+|===
+
+== The composition contract (summary)
+
+From docmatrix#71. blocky-writer is a party to all eight clauses, but clause 4
+is the one it is most likely to break:
+
+[quote]
+____
+No component silently normalises punctuation, Unicode/whitespace, attribution,
+terminology, document structure, or page geometry.
+____
+
+Page geometry is this project's entire subject. Normalising a rectangle "to be
+helpful" is precisely the failure the contract forbids.
+
+== Proof obligations do not transfer
+
+* Conversion round-trip tests do not prove synchronised editor state.
+* Editor tests do not prove fixed-layout PDF geometry.
+* Exact page coordinates do not prove semantic correctness.
+* Deterministic Forth execution does not prove the chosen operation or location
+  was correct.
+
+A green badge on a neighbour is not evidence about this repository, and this
+repository's green `cargo test` is not evidence about a neighbour's.
+
+== How cross-repo communication works here
+
+There is no standing integration programme and none is planned. The working
+pattern is deliberately light:
+
+. Each repo states its own boundary in its README and links the others.
+. When a repo's status changes in a way that unblocks or affects a neighbour,
+  it files a short issue on that neighbour saying what changed and what the
+  neighbour can now progress with or consume.
+. The neighbour decides whether to act. Nothing is merged across repos.
+
+If you are about to build something that belongs to a project in the table
+above, stop and check that project's README and open issues first.
