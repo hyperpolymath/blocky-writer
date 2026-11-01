@@ -651,7 +651,11 @@ fn detect_blocks_impl(pdf_data: &[u8]) -> CoreResult<Vec<Block>> {
                 core_error_with_context(
                     "BW_PDF_ANNOTATION_UNRESOLVED",
                     format!("could not resolve page annotation: {err}"),
-                    Some(format!("page {} annotation {}", page_number, annot_index + 1)),
+                    Some(format!(
+                        "page {} annotation {}",
+                        page_number,
+                        annot_index + 1
+                    )),
                 )
             })?;
             let widget = match annot_obj {
@@ -660,7 +664,11 @@ fn detect_blocks_impl(pdf_data: &[u8]) -> CoreResult<Vec<Block>> {
                     return Err(core_error_with_context(
                         "BW_PDF_ANNOTATION_INVALID",
                         "page annotation is not a dictionary",
-                        Some(format!("page {} annotation {}", page_number, annot_index + 1)),
+                        Some(format!(
+                            "page {} annotation {}",
+                            page_number,
+                            annot_index + 1
+                        )),
                     ));
                 }
             };
@@ -674,21 +682,33 @@ fn detect_blocks_impl(pdf_data: &[u8]) -> CoreResult<Vec<Block>> {
                 core_error_with_context(
                     "BW_PDF_WIDGET_RECT_INVALID",
                     format!("widget Rect is missing: {err}"),
-                    Some(format!("page {} annotation {}", page_number, annot_index + 1)),
+                    Some(format!(
+                        "page {} annotation {}",
+                        page_number,
+                        annot_index + 1
+                    )),
                 )
             })?;
             let rect_obj = resolve_object(&doc, rect_obj).map_err(|err| {
                 core_error_with_context(
                     "BW_PDF_WIDGET_RECT_INVALID",
                     format!("could not resolve widget Rect: {err}"),
-                    Some(format!("page {} annotation {}", page_number, annot_index + 1)),
+                    Some(format!(
+                        "page {} annotation {}",
+                        page_number,
+                        annot_index + 1
+                    )),
                 )
             })?;
             let rect = rect_from_object(&rect_obj).ok_or_else(|| {
                 core_error_with_context(
                     "BW_PDF_WIDGET_RECT_INVALID",
                     "widget Rect must contain four ordered, finite, representable numbers",
-                    Some(format!("page {} annotation {}", page_number, annot_index + 1)),
+                    Some(format!(
+                        "page {} annotation {}",
+                        page_number,
+                        annot_index + 1
+                    )),
                 )
             })?;
 
@@ -1100,10 +1120,8 @@ mod tests {
 
     #[test]
     fn detect_blocks_resolves_indirect_widget_rectangles() {
-        let pdf = fixture_with_first_widget_indirect_rect(
-            &make_fixture_pdf(),
-            rect(50, 700, 250, 724),
-        );
+        let pdf =
+            fixture_with_first_widget_indirect_rect(&make_fixture_pdf(), rect(50, 700, 250, 724));
         let blocks = detect_blocks_impl(&pdf).expect("indirect Rect arrays should resolve");
         assert_eq!((blocks[0].x, blocks[0].y), (50.0, 700.0));
         assert_eq!((blocks[0].width, blocks[0].height), (200.0, 24.0));
@@ -1125,10 +1143,7 @@ mod tests {
     #[test]
     fn detect_blocks_reports_unresolved_page_annots_reference() {
         let missing_id = (u32::MAX, u16::MAX);
-        let pdf = fixture_with_page_annots(
-            &make_fixture_pdf(),
-            Object::Reference(missing_id),
-        );
+        let pdf = fixture_with_page_annots(&make_fixture_pdf(), Object::Reference(missing_id));
         assert_error_code(detect_blocks_impl(&pdf), "BW_PDF_ANNOTATIONS_INVALID");
     }
 
