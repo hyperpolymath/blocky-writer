@@ -10,10 +10,10 @@ use wasm_bindgen::prelude::*;
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Block {
     pub label: String,
-    pub x: f32,
-    pub y: f32,
-    pub width: f32,
-    pub height: f32,
+    pub x: f64,
+    pub y: f64,
+    pub width: f64,
+    pub height: f64,
 }
 
 #[derive(Debug, Serialize)]
@@ -53,21 +53,60 @@ fn resolve_object(doc: &Document, obj: &Object) -> Result<Object, lopdf::Error> 
     }
 }
 
-fn object_to_number(obj: &Object) -> Option<f32> {
-    match obj {
-        Object::Integer(value) => {
-            let converted = *value as f32;
-            // Converting back through i128 avoids saturation at the i64 bounds
-            // and lets us refuse values that `f32` would silently change at the
-            // Block/WASM boundary.
-            ((converted as i128) == (*value as i128)).then_some(converted)
+fn object_to_number(doc: &Document, obj: &Object) -> Option<f64> {
+    let mut resolved = obj.clone();
+    let mut references = HashSet::new();
+
+    loop {
+        match resolved {
+            Object::Reference(id) => {
+                if !references.insert(id) {
+                    return None;
+                }
+                resolved = doc.get_object(id).ok()?.clone();
+            }
+            Object::Integer(value) => {
+                let converted = value as f64;
+                // Reject integers outside f64's exact range rather than
+                // silently presenting rounded coordinates to callers.
+                return ((converted as i128) == (value as i128)).then_some(converted);
+            }
+            Object::Real(value) => {
+                let converted = f64::from(value);
+                return converted.is_finite().then_some(converted);
+            }
+            _ => return None,
         }
-        Object::Real(value) => value.is_finite().then_some(*value),
-        _ => None,
     }
 }
 
-fn rect_from_object(obj: &Object) -> Option<(f32, f32, f32, f32)> {
+fn rect_from_coordinates(x1: f64, y1: f64, x2: f64, y2: f64) -> Option<(f64, f64, f64, f64)> {
+    if ![x1, y1, x2, y2]
+        .iter()
+        .all(|coordinate| coordinate.is_finite())
+    {
+        return None;
+    }
+
+    // PDF Rect stores two diagonally opposite corners, which may be supplied
+    // in either order. Canonicalize the pair ordering required to expose an
+    // x/y/width/height block; this is PDF-defined interpretation, not a page
+    // coordinate transform.
+    let llx = x1.min(x2);
+    let lly = y1.min(y2);
+    let urx = x1.max(x2);
+    let ury = y1.max(y2);
+    let width = urx - llx;
+    let height = ury - lly;
+
+    if !width.is_finite() || !height.is_finite() {
+        return None;
+    }
+
+    Some((llx, lly, width, height))
+}
+
+fn rect_from_object(doc: &Document, obj: &Object) -> Option<(f64, f64, f64, f64)> {
     let Object::Array(values) = obj else {
         return None;
     };
@@ -76,25 +115,12 @@ fn rect_from_object(obj: &Object) -> Option<(f32, f32, f32, f32)> {
         return None;
     }
 
-    let llx = object_to_number(&values[0])?;
-    let lly = object_to_number(&values[1])?;
-    let urx = object_to_number(&values[2])?;
-    let ury = object_to_number(&values[3])?;
-
-    // PDF Rect is ordered as lower-left then upper-right. Do not normalize a
-    // malformed/reversed rectangle: that changes page geometry without the
-    // caller's knowledge.
-    if llx > urx || lly > ury {
-        return None;
-    }
-
-    let width = urx - llx;
-    let height = ury - lly;
-    if !width.is_finite() || !height.is_finite() {
-        return None;
-    }
-
-    Some((llx, lly, width, height))
+    rect_from_coordinates(
+        object_to_number(doc, &values[0])?,
+        object_to_number(doc, &values[1])?,
+        object_to_number(doc, &values[2])?,
+        object_to_number(doc, &values[3])?,
+    )
 }
 
 fn object_to_text(obj: &Object) -> Option<String> {
@@ -628,16 +654,12 @@ fn detect_blocks_impl(pdf_data: &[u8]) -> CoreResult<Vec<Block>> {
             Err(_) => continue,
         };
 
-        let annots = resolve_object(&doc, annots_obj).map_err(|err| {
-            core_error_with_context(
-                "BW_PDF_ANNOTATIONS_INVALID",
-                format!("could not resolve page Annots array: {err}"),
-                Some(format!("page {}", page_number)),
-            )
-        })?;
-        let annots = match annots {
-            Object::Array(arr) => arr,
-            _ => {
+        let annots = match resolve_object(&doc, annots_obj) {
+            Ok(Object::Array(arr)) => arr,
+            // PDF null entries, including references to missing objects, have
+            // the same effect as an absent optional /Annots entry.
+            Ok(Object::Null) | Err(_) => continue,
+            Ok(_) => {
                 return Err(core_error_with_context(
                     "BW_PDF_ANNOTATIONS_INVALID",
                     "page Annots entry is not an array",
@@ -647,19 +669,13 @@ fn detect_blocks_impl(pdf_data: &[u8]) -> CoreResult<Vec<Block>> {
         };
 
         for (annot_index, annot_ref) in annots.iter().enumerate() {
-            let annot_obj = resolve_object(&doc, annot_ref).map_err(|err| {
-                core_error_with_context(
-                    "BW_PDF_ANNOTATION_UNRESOLVED",
-                    format!("could not resolve page annotation: {err}"),
-                    Some(format!(
-                        "page {} annotation {}",
-                        page_number,
-                        annot_index + 1
-                    )),
-                )
-            })?;
+            let annot_obj = match resolve_object(&doc, annot_ref) {
+                Ok(Object::Null) | Err(_) => continue,
+                Ok(obj) => obj,
+            };
             let widget = match annot_obj {
                 Object::Dictionary(dict) => dict,
+                Object::Null => continue,
                 _ => {
                     return Err(core_error_with_context(
                         "BW_PDF_ANNOTATION_INVALID",
@@ -700,10 +716,10 @@ fn detect_blocks_impl(pdf_data: &[u8]) -> CoreResult<Vec<Block>> {
                     )),
                 )
             })?;
-            let rect = rect_from_object(&rect_obj).ok_or_else(|| {
+            let rect = rect_from_object(&doc, &rect_obj).ok_or_else(|| {
                 core_error_with_context(
                     "BW_PDF_WIDGET_RECT_INVALID",
-                    "widget Rect must contain four ordered, finite, representable numbers",
+                    "widget Rect must contain four finite, exactly representable numbers with finite extents",
                     Some(format!(
                         "page {} annotation {}",
                         page_number,
@@ -947,6 +963,74 @@ mod tests {
         save_fixture_doc(&mut doc)
     }
 
+    fn fixture_with_first_widget_indirect_rect_coordinates(pdf_data: &[u8]) -> Vec<u8> {
+        let mut doc = Document::load_mem(pdf_data).expect("load fixture PDF");
+        let page_id = *doc
+            .get_pages()
+            .values()
+            .next()
+            .expect("fixture has one page");
+        let widget_id = {
+            let page = doc
+                .get_object(page_id)
+                .expect("fixture page exists")
+                .as_dict()
+                .expect("fixture page is a dictionary");
+            let annots = page
+                .get(b"Annots")
+                .expect("fixture page has Annots")
+                .as_array()
+                .expect("fixture Annots is an array");
+            match annots.first().expect("fixture has a widget annotation") {
+                Object::Reference(id) => *id,
+                _ => panic!("fixture widget must be indirect"),
+            }
+        };
+        let mut coordinates = Vec::new();
+        for value in [50_i64, 700, 250, 724] {
+            let id = doc.new_object_id();
+            doc.objects.insert(id, Object::Integer(value));
+            coordinates.push(Object::Reference(id));
+        }
+        doc.get_object_mut(widget_id)
+            .expect("fixture widget exists")
+            .as_dict_mut()
+            .expect("fixture widget is a dictionary")
+            .set(b"Rect", Object::Array(coordinates));
+        save_fixture_doc(&mut doc)
+    }
+
+    fn fixture_without_first_widget_rect(pdf_data: &[u8]) -> Vec<u8> {
+        let mut doc = Document::load_mem(pdf_data).expect("load fixture PDF");
+        let page_id = *doc
+            .get_pages()
+            .values()
+            .next()
+            .expect("fixture has one page");
+        let widget_id = {
+            let page = doc
+                .get_object(page_id)
+                .expect("fixture page exists")
+                .as_dict()
+                .expect("fixture page is a dictionary");
+            let annots = page
+                .get(b"Annots")
+                .expect("fixture page has Annots")
+                .as_array()
+                .expect("fixture Annots is an array");
+            match annots.first().expect("fixture has a widget annotation") {
+                Object::Reference(id) => *id,
+                _ => panic!("fixture widget must be indirect"),
+            }
+        };
+        let widget = dictionary! {
+            "Type" => name("Annot"),
+            "Subtype" => name("Widget"),
+        };
+        doc.objects.insert(widget_id, Object::Dictionary(widget));
+        save_fixture_doc(&mut doc)
+    }
+
     fn fixture_with_page_annots(pdf_data: &[u8], annots: Object) -> Vec<u8> {
         let mut doc = Document::load_mem(pdf_data).expect("load fixture PDF");
         let page_id = *doc
@@ -1128,6 +1212,14 @@ mod tests {
     }
 
     #[test]
+    fn detect_blocks_resolves_indirect_widget_rect_coordinates() {
+        let pdf = fixture_with_first_widget_indirect_rect_coordinates(&make_fixture_pdf());
+        let blocks = detect_blocks_impl(&pdf).expect("indirect Rect coordinates should resolve");
+        assert_eq!((blocks[0].x, blocks[0].y), (50.0, 700.0));
+        assert_eq!((blocks[0].width, blocks[0].height), (200.0, 24.0));
+    }
+
+    #[test]
     fn detect_blocks_returns_empty_for_page_without_annotations() {
         let pdf = fixture_with_page_annots(&make_fixture_pdf(), Object::Array(Vec::new()));
         let blocks = detect_blocks_impl(&pdf).expect("empty Annots array is valid");
@@ -1141,16 +1233,26 @@ mod tests {
     }
 
     #[test]
-    fn detect_blocks_reports_unresolved_page_annots_reference() {
+    fn detect_blocks_treats_null_and_unresolved_page_annots_as_absent() {
+        let base = make_fixture_pdf();
+        let null_annots = fixture_with_page_annots(&base, Object::Null);
+        assert!(detect_blocks_impl(&null_annots)
+            .expect("null Annots has the effect of an absent entry")
+            .is_empty());
+
         let missing_id = (u32::MAX, u16::MAX);
-        let pdf = fixture_with_page_annots(&make_fixture_pdf(), Object::Reference(missing_id));
-        assert_error_code(detect_blocks_impl(&pdf), "BW_PDF_ANNOTATIONS_INVALID");
+        let unresolved_annots = fixture_with_page_annots(&base, Object::Reference(missing_id));
+        assert!(detect_blocks_impl(&unresolved_annots)
+            .expect("unresolved Annots is treated as null")
+            .is_empty());
     }
 
     #[test]
-    fn detect_blocks_rejects_reversed_widget_rectangles() {
-        let pdf = fixture_with_first_widget_rect(&make_fixture_pdf(), rect(250, 700, 50, 724));
-        assert_error_code(detect_blocks_impl(&pdf), "BW_PDF_WIDGET_RECT_INVALID");
+    fn detect_blocks_normalizes_pdf_rect_corner_order() {
+        let pdf = fixture_with_first_widget_rect(&make_fixture_pdf(), rect(250, 724, 50, 700));
+        let blocks = detect_blocks_impl(&pdf).expect("either diagonal-corner order is valid");
+        assert_eq!((blocks[0].x, blocks[0].y), (50.0, 700.0));
+        assert_eq!((blocks[0].width, blocks[0].height), (200.0, 24.0));
     }
 
     #[test]
@@ -1174,20 +1276,98 @@ mod tests {
     }
 
     #[test]
-    fn detect_blocks_rejects_integer_coordinates_that_lose_f32_precision() {
-        let imprecise_rect = rect(16_777_217, 700, 16_777_250, 724);
-        let pdf = fixture_with_first_widget_rect(&make_fixture_pdf(), imprecise_rect);
+    fn object_to_number_preserves_f64_integer_boundaries() {
+        let doc = Document::with_version("1.7");
+
+        assert_eq!(
+            object_to_number(&doc, &Object::Integer(16_777_217)),
+            Some(16_777_217.0)
+        );
+        assert_eq!(
+            object_to_number(&doc, &Object::Integer(9_007_199_254_740_992)),
+            Some(9_007_199_254_740_992.0)
+        );
+        assert_eq!(
+            object_to_number(&doc, &Object::Integer(i64::MIN)),
+            Some(i64::MIN as f64)
+        );
+        assert_eq!(
+            object_to_number(&doc, &Object::Integer(9_007_199_254_740_993)),
+            None
+        );
+        assert_eq!(object_to_number(&doc, &Object::Real(f32::NAN)), None);
+        assert_eq!(object_to_number(&doc, &Object::Real(f32::INFINITY)), None);
+    }
+
+    #[test]
+    fn rect_from_object_rejects_non_finite_values_and_overflowing_extents() {
+        let doc = Document::with_version("1.7");
+        let non_finite = Object::Array(vec![
+            Object::Real(f32::NAN),
+            Object::Integer(0),
+            Object::Integer(10),
+            Object::Integer(10),
+        ]);
+        assert_eq!(rect_from_object(&doc, &non_finite), None);
+
+        assert_eq!(rect_from_coordinates(-f64::MAX, 0.0, f64::MAX, 1.0), None);
+        assert_eq!(rect_from_coordinates(0.0, -f64::MAX, 1.0, f64::MAX), None);
+        assert_eq!(
+            rect_from_object(&doc, &rect(16_777_217, 0, 16_777_250, 1)),
+            Some((16_777_217.0, 0.0, 33.0, 1.0))
+        );
+    }
+
+    #[test]
+    fn detect_blocks_reports_missing_widget_rectangles() {
+        let pdf = fixture_without_first_widget_rect(&make_fixture_pdf());
         assert_error_code(detect_blocks_impl(&pdf), "BW_PDF_WIDGET_RECT_INVALID");
     }
 
     #[test]
-    fn detect_blocks_reports_unresolved_annotation_references() {
+    fn detect_blocks_reports_unresolved_widget_rect_references() {
+        let missing_id = (u32::MAX, u16::MAX);
+        let unresolved_array =
+            fixture_with_first_widget_rect(&make_fixture_pdf(), Object::Reference(missing_id));
+        assert_error_code(
+            detect_blocks_impl(&unresolved_array),
+            "BW_PDF_WIDGET_RECT_INVALID",
+        );
+
+        let unresolved_coordinate = fixture_with_first_widget_rect(
+            &make_fixture_pdf(),
+            Object::Array(vec![
+                Object::Reference(missing_id),
+                Object::Integer(0),
+                Object::Integer(10),
+                Object::Integer(10),
+            ]),
+        );
+        assert_error_code(
+            detect_blocks_impl(&unresolved_coordinate),
+            "BW_PDF_WIDGET_RECT_INVALID",
+        );
+    }
+
+    #[test]
+    fn detect_blocks_accepts_integer_coordinates_above_f32_precision_limit() {
+        let precise_rect = rect(16_777_217, 700, 16_777_250, 724);
+        let pdf = fixture_with_first_widget_rect(&make_fixture_pdf(), precise_rect);
+        let blocks = detect_blocks_impl(&pdf).expect("f64 preserves these valid PDF integers");
+        assert_eq!(blocks[0].x, 16_777_217.0);
+        assert_eq!(blocks[0].width, 33.0);
+    }
+
+    #[test]
+    fn detect_blocks_skips_null_and_unresolved_annotation_entries() {
         let missing_id = (u32::MAX, u16::MAX);
         let pdf = fixture_with_page_annots(
             &make_fixture_pdf(),
-            Object::Array(vec![Object::Reference(missing_id)]),
+            Object::Array(vec![Object::Null, Object::Reference(missing_id)]),
         );
-        assert_error_code(detect_blocks_impl(&pdf), "BW_PDF_ANNOTATION_UNRESOLVED");
+        assert!(detect_blocks_impl(&pdf)
+            .expect("null and unresolved annotation entries are absent")
+            .is_empty());
     }
 
     #[test]
