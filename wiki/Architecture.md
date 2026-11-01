@@ -49,7 +49,7 @@ SPDX-License-Identifier: MPL-2.0
 
 | Layer | Reality |
 | --- | --- |
-| Rust/WASM core | **Implemented and tested.** `rust/pdftool_core/src/lib.rs`, ~1030 lines, 6 unit tests. |
+| Rust/WASM core | **Implemented and tested in CI.** `rust/pdftool_core/src/lib.rs` contains 22 unit-test functions (6 fill/error, 14 detector, 2 numeric-geometry); PR #78 revision `9f9370e` passed the Rust CI job in run `41326285595`. |
 | AffineScript surfaces | **Prototype.** `src/*.affine` sources exist; no compiler config, no bundle pipeline. |
 | Extension packaging | **Absent.** `public/manifest.json` and icons are present; nothing produces a loadable `.xpi`. |
 | Storage | **Prototype.** `src/core/Storage.affine` only. |
@@ -65,10 +65,18 @@ functions. That boundary is the whole contract:
                                      -> Result<js_sys::Uint8Array, JsValue>
 ```
 
-* `detect_blocks` walks every page's `Annots`, keeps the ones that are widget
-  annotations with a usable `Rect`, and returns a `Block { label, x, y, width,
-  height }` per widget. Labels come from the field's `/T`, falling back to the
-  parent field's `/T`, falling back to `field_<page>_<index>`.
+* `detect_blocks` walks every page's `Annots` and returns a `Block { label, x,
+  y, width, height }` per widget with usable geometry. `/Rect` accepts its two
+  diagonal corners in either PDF-permitted order and resolves chained indirect
+  arrays and numeric coordinate objects with cycle protection; output
+  coordinates are PDF user-space `f64`
+  values, with no screen or page-rotation transform. Missing, unresolved,
+  malformed, non-finite, or unrepresentable widget rectangles fail detection
+  with `BW_PDF_WIDGET_RECT_INVALID` rather than being silently skipped. A null
+  or dangling optional `/Annots` entry is treated as absent; other malformed
+  non-null annotation objects fail with a structured error. Labels come from
+  the field's `/T`, falling back to the parent field's `/T`, falling back to
+  `field_<page>_<index>`.
 * `fill_blocks` takes the original PDF bytes plus a `field name → value` map,
   writes the values into the AcroForm, and returns new PDF bytes. It is
   **name-driven, not coordinate-driven** — the `blocks` argument is parsed and
@@ -87,8 +95,10 @@ with a stable machine code, a human message, and optional context:
 { "code": "BW_FILL_NO_MATCHING_FIELDS", "message": "…", "context": "Choice" }
 ```
 
-There are 24 unique `BW_*` codes in the current source (20 baseline codes plus
-four detector-validation codes). Error codes are external API; repository
-guidance treats additions and renames as breaking changes, so this expansion
-needs compatibility/version review before merge. The four additions also remain
-unverified until the current Rust diff passes formatting, tests, and Clippy.
+There are 23 unique `BW_*` codes in the current source (20 baseline codes plus
+three detector-validation codes). Error codes are external API; repository
+guidance treats additions and renames as breaking changes. The core is bumped
+to `0.2.0` for this contract change; owner compatibility review is still open.
+Rust CI run `41326285595` passed formatting, all 22 tests, and Clippy at
+implementation commit `9f9370e`. That run does not establish general PDF
+conformance or a formal proof.

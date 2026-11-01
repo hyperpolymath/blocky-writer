@@ -12,24 +12,25 @@ Last reviewed: 2026-11-01.
 |Category |Count |Notes
 |Test directories |1 |Location(s): /tests (aspect + fuzz placeholder)
 |CI workflows |14 |`.github/workflows/*.yml`. `ci.yml` runs the Rust core checks; `actions.lock` is a file, not a workflow. See docs/ci/CHECK-DETERMINATIONS.adoc
-|Unit tests |17 in source |Rust `pdftool_core` — 6 existing fill/error tests + 11 direct detector tests in the current working diff. Current diff is uncompiled and unrun.
+|Unit tests |22 in source |Rust `pdftool_core` — 6 fill/error tests, 14 detector tests, and 2 direct numeric-geometry tests. PR #78 implementation commit `9f9370e` passed formatting, all unit tests, and Clippy in run `41326285595`.
 |===
 
 === What's Covered
 
 * [x] Rust core baseline CI on `main` — run `38818494415` at `3fd5ba1`
-  passed formatting, tests, and Clippy (actor `hyperpolymath`). That run predates
-  this branch's detector changes.
-* [ ] Current working diff — 17 test functions are present, including 11 direct
-  detector tests for valid widgets, indirect rectangles, malformed annotation
-  arrays/references, invalid rectangles, and non-widget annotations. They have
-  not been compiled or run because this sandbox has no Rust toolchain.
-* [ ] `actions.lock` synchronisation gate — failing on current `main` at run
-  `38818494312`; the YAML uses `smtp-notify-action@v0.5.0` while generated lock
-  metadata records `v0.3.0`. Do not hand-edit the generated file.
-* [ ] Governance Actions lock verification — failed at run `38818495000` for
-  the same lock drift; other job outcomes and additional current failures are
-  recorded in `docs/ci/CHECK-DETERMINATIONS.adoc`.
+  passed formatting, tests, and Clippy (actor `hyperpolymath`). That run is
+  baseline evidence only.
+* [x] PR #78 implementation revision `9f9370e` — run `41326285595` passed
+  formatting, all 22 unit tests, and Clippy. The synthetic fixtures exercise
+  PDF-defined corner ordering, chained indirect rectangles and numeric
+  references (including cycles), exact integer boundaries, null/dangling
+  annotations, and missing/unresolved/malformed widget geometry.
+  This is not real-world PDF corpus coverage or a formal proof receipt.
+* [ ] `actions.lock` synchronisation gate — failing on PR run `41326285660`
+  and main run `38818494312`; the YAML uses `smtp-notify-action@v0.5.0` while
+  generated lock metadata records `v0.3.0`. Do not hand-edit the generated file.
+* [ ] CodeQL and Hypatia — current PR jobs fail during `Set up job`; causes are
+  unknown, and the logs were unavailable.
 
 === Still Missing (for CRG B+)
 

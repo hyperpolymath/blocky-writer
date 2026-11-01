@@ -10,25 +10,29 @@
 == Executive disposition
 
 This remains an evidence-backed plan with partial implementation in the session
-branch, not a completed change. The requested work has four separate
-owners/scopes and must not be collapsed into a new integration product:
+branch, not a completed or merged change. Keep the work separated and do not
+collapse it into a new integration product:
 
 . Restore trustworthy repository health records and repair the current Actions
-  lock mismatch.
+  lock mismatch; do not hand-edit generated lock metadata.
+. Preserve the local detector correction, its PDF-spec semantics, and the
+  versioned error contract; resolve the remaining geometry/identity and owner
+  review gates before merge.
 . Bring Blocky Writer's *producer* into conformance with active, ratified FFP
   1.0, then declare and test the existing Blocky Writer -> Presswerk handoff
   under the estate's active SEAMS-SPEC.
-. Establish direct detection tests and resolve geometry/field-identity behavior
-  against the DocMatrix composition contract before changing that behavior.
-. Handle Formatrix Docs#61 and RSR-template-repo#200 as bounded, informational
-  follow-ups owned by those repositories; do not build a viewer/parser
-  integration or edit another repository here.
+. Handle Formatrix Docs#61 and RSR-template-repo#200 as bounded follow-ups owned
+  by those repositories; include Mathesis and Standards for proof-policy
+  coordination. Do not build a viewer/parser integration or edit another repo.
+. Track proof claims at the exact Mathesis grade and use the Standards proof
+  policy. The current Rust CI result is `TESTED`, not a Grade 3 proof receipt.
 
 The boundary remains explicit: Formatrix Docs owns multi-format viewing and
 editing; Blocky Writer owns fixed-layout PDF/form placement. DocMatrix#71 rejects
 a new runtime integration engine. A test-only producer-to-consumer check is not
 a runtime integration, but it must not create a runtime dependency or a new
-universal document serializer.
+universal document serializer. Mathesis may catalogue proof receipts; the
+original repository remains the owner of its proofs and engineering contracts.
 
 == Current implementation status (2026-11-01)
 
@@ -37,13 +41,15 @@ universal document serializer.
 | Work area | Current state on `arena/d32cfaf0-blocky-writer`
 
 | Detector geometry
-| The working diff rejects reversed, non-finite, and lossy integer widget
-  rectangles; resolves an indirect `/Rect`; and reports malformed annotation
-  arrays, unresolved/invalid annotations, and invalid widget rectangles with
-  structured errors. This adds four public `BW_*` codes; compatibility/version
-  review remains pending. Eleven direct detector tests and the six original
-  fill/error tests are present (17 test functions total). None has been
-  compiled or run on this branch.
+| Implementation revision `9f9370e` follows PDF `/Rect` corner-pair semantics,
+  resolves chained indirect arrays and numeric elements with cycle protection,
+  uses `f64` for exactly representable integer coordinates, skips null/dangling
+  optional annotation entries, and reports malformed widget geometry with
+  structured errors. This adds three public `BW_*` codes and changes the numeric
+  surface; the crate is versioned `0.2.0`. There are 22 tests (6 fill/error,
+  14 detector, 2 numeric guard). Rust CI run `41326285595` passed
+  fmt/tests/Clippy at that exact commit. Geometry-owner compatibility review
+  remains open; no Grade 3 proof is claimed.
 
 | FFP producer
 | Not implemented. `fill_blocks_impl` still writes no FFP XMP marker. Safe XMP
@@ -58,22 +64,26 @@ universal document serializer.
   unresolved. No Trustfile or Mustfile seam declaration has been added.
 
 | CI / lock
-| `origin/main` is at `3fd5ba1` (#75); this session branch is at `c2b073e`
-  (#74). Both commits are shallow/grafted in this checkout, so their ancestry is
-  not inferred. Current `main` still has `push-email-notify.yml` at v0.5.0 while the generated
-  lock records v0.3.0. Main's latest Rust CI run passed, but its Governance and
-  Lock Sync Gate runs failed on lock verification. The prescribed
-  `gh actions-lock` generator is unavailable here; the lock has not been edited.
+| `origin/main` is at `3fd5ba1` (#75); the session fork point is `c2b073e`
+  (#74); PR #78 implementation revision `9f9370e` is the current tested code.
+  Main Rust run `38818494415` and PR Rust run `41326285595` passed. Main and PR
+  lock checks failed (`38818494312`, `41326285660`) because the workflow uses
+  `smtp-notify-action@v0.5.0` while the generated lock records `v0.3.0`. The
+  prescribed `gh actions-lock` generator is unavailable here; the lock remains
+  untouched.
 
 | Validation environment
-| `cargo`, `rustc`, `rustfmt`, `gawk`, `go`, and `asciidoctor` are absent from
-  `PATH`. Rust formatting, compilation, tests, Clippy, lock verification, and
-  AsciiDoc rendering therefore remain pending. Do not describe the working diff
-  as passing.
+| `cargo`, `rustc`, `rustfmt`, `gawk`, `go`, `asciidoctor`, `agda`, `rocq`,
+  `lean`, `idris2`, and `creusot` are absent from `PATH`. Rust
+  formatting/tests/Clippy have remote CI receipts for `9f9370e`; lock
+  verification and AsciiDoc rendering remain unverified here. CodeQL and
+  Hypatia fail during setup with unknown causes. No formal proof artifact or
+  Grade 3 receipt exists, and no proof checker was available locally.
 
 | Estate follow-ups
 | No other repository or issue has been edited or closed. The A2ML/DEED
-  interpretation and SEAMS-SPEC gates remain as recorded below.
+  interpretation, SEAMS-SPEC gates, and Mathesis/Standards proof-policy
+  coordination remain open as recorded below.
 |===
 
 == Recon snapshot and limits
@@ -82,14 +92,28 @@ universal document serializer.
 |===
 | Item | Snapshot used
 
-| Blocky Writer
-| `c2b073eaf5e204f466adc0797484478ce94ef95b`, on the session branch
-  `arena/d32cfaf0-blocky-writer`; the checkout was clean before this plan was
-  written.
+| Blocky Writer recon base
+| Fork point `c2b073eaf5e204f466adc0797484478ce94ef95b`; this is the pre-change
+  base, not the implementation revision.
 
-| Estate standards
+| Blocky Writer implementation evidence
+| PR #78 implementation commit `9f9370e206ae8cc6dd3ac86cba3f0904e4838135`;
+  Rust CI run `41326285595` passed at this SHA. This distinguishes the recon
+  base from the tested code revision.
+
+| Estate standards (FFP / SEAMS snapshot)
 | `hyperpolymath/standards` at
   `3108c1b01186741eea80c00da3f4beda912286f9` (2026-10-09).
+
+| Estate standards proof policy
+| `hyperpolymath/standards` at
+  `46ee18323305d5b36e2eef936e47dd54c39ea736`, file
+  `3-practice/PROOF-POLICY.adoc` (checked 2026-11-01).
+
+| Mathesis proof architecture
+| `hyperpolymath/mathesis` at `50a012dba57fe90c9aca8d57241690c133ab117c`;
+  includes `estate-mathematical-architecture` and
+  `docs/status/PROOF-NEEDS.adoc` (T3 Standard).
 
 | RSR template
 | `hyperpolymath/rsr-template-repo` at
@@ -104,12 +128,13 @@ universal document serializer.
   `f17620192b69ccffb9454cd49aac8d5ec9454c48` (2026-10-05).
 |===
 
-No Rust tests, build, format, lint, FFP conformance run, browser build, or
-AsciiDoc render has run on the current working tree. `cargo`, `rustc`, `rustfmt`,
-`gawk`, `go`, `asciidoctor`, `just`, `wasm-pack`, and `deno` are not on `PATH`.
-The plan therefore distinguishes source inspection and recorded remote CI
-evidence from checks actually executed in this sandbox. Remote CI results below
-are for `origin/main` at `3fd5ba1`, not this feature branch.
+No local Rust build/test/format/lint, FFP conformance run, browser build,
+AsciiDoc render, or formal proof check has run in this sandbox: `cargo`, `rustc`,
+`rustfmt`, `gawk`, `go`, `asciidoctor`, `just`, `wasm-pack`, `deno`, `agda`,
+`rocq`, `lean`, `idris2`, and `creusot` are absent from `PATH`. Remote Rust CI
+run `41326285595` passed for implementation revision `9f9370e`; main baseline
+run `38818494415` at `3fd5ba1` is separate evidence. No FFP seam or formal proof
+has been run. Do not collapse CI tests into a Mathesis Grade 3 proof claim.
 
 == Binding rules and authority
 
@@ -133,10 +158,26 @@ Use the status of each source, not just its location in the estate:
   engine. ForthWall remains proposed and audit/propose/verify-only.
 * **Blocky Writer's own contractiles remain binding.** `INTENT.contractile`
   says the WASM boundary is exactly two functions, filling is name-driven, and
-  page geometry is never silently normalized. `MUST.contractile` forbids new
+  page geometry is never silently transformed. `MUST.contractile` forbids new
   TypeScript/Python/Go and NPM dependencies, removal/weakening of tests or CI,
-  loss of `.machine_readable/`, and unapproved unsafe Rust. Preserve these
-  constraints while implementing the plan.
+  loss of `.machine_readable/`, and unapproved unsafe Rust. PDF-defined
+  interpretation of `/Rect` corner order is not a screen/page transform; no
+  other normalization is introduced.
+* **Standards proof policy is binding.** The current
+  `hyperpolymath/standards/3-practice/PROOF-POLICY.adoc` maps first-party Rust
+  code to Creusot, API/ABI engineering properties to Idris2, and mathematical
+  theory to Agda, with theory proofs rechecked in Rocq and Lean. Third-party
+  `lopdf` code is not edited or re-proved; behavior relied on at that boundary
+  is recorded as an assumption with version and evidence.
+* **Mathesis Grade 3 is an evidence status, not a test grade.** The estate
+  mathematics architecture defines Grade 3 as a claim that type-checks locally
+  in Agda but has not been translated to an independent foundation. Mathesis
+  `T3 — Standard` is a separate repository proof-tier label. Mathesis catalogs
+  receipts while source repositories retain proof ownership. This PR's Rust CI
+  tests are `TESTED` evidence only: no formal proof artifact exists here, so no
+  Grade 3 or `PROVEN` claim is made. To satisfy the requested Grade 3 proofing,
+  formalizable theory claims need a locally checked Agda witness; code and ABI
+  obligations still follow the Standards verifier mapping.
 * **The A2ML/DEED format position is unresolved.** Current standards A2ML
   `meta`, `state`, and `ecosystem` documentation carries a warning that the old
   TOML-like characterization is superseded and points to DEED. But
@@ -158,10 +199,11 @@ Use the status of each source, not just its location in the estate:
 | CI and state
 | https://github.com/hyperpolymath/blocky-writer/pull/74[PR#74] merged
   `smtp-notify-action` v0.5.0 into `.github/workflows/push-email-notify.yml`;
-  `.github/workflows/actions.lock` still records v0.3.0. The latest observed
-  Rust CI run at `c2b073e` passed,
-  while Governance and Lock Sync Gate failed. Four mirror jobs also failed;
-  their causes are not established.
+  `.github/workflows/actions.lock` still records v0.3.0. Historical Rust CI at
+  the fork point `c2b073e` passed; implementation revision `9f9370e` also passed
+  in run `41326285595`. Current main and PR Lock Sync runs (`38818494312`,
+  `41326285660`) still fail. Four mirror jobs failed on main; their causes are
+  not established.
 | Repair the generated lock first, then refresh the health ledger from
   owner-triggered/current runs. Do not disable checks or attribute mirror
   failures without their evidence.
@@ -195,24 +237,32 @@ Use the status of each source, not just its location in the estate:
 | Detection tests
 | At the inspected base `c2b073e`, the six Rust unit tests all exercised
   fill/error paths; none called `detect_blocks`, although `TEST-NEEDS.adoc`
-  marked block detection as covered. The working diff now adds eleven direct
-  detector tests, bringing the source count to 17; these remain uncompiled and
-  unrun.
-| Correct the coverage record, keep the unverified tests clearly marked, and
-  complete the remaining geometry/identity cases only after their contracts are
-  agreed.
+  marked block detection as covered. Implementation revision `9f9370e` has 22
+  test functions: 6 fill/error, 14 detector, 2 direct numeric-geometry checks.
+  Rust CI run `41326285595` passed formatting, all tests, and Clippy on that
+  exact revision.
+| The synthetic tests now cover PDF-defined corner ordering, chained indirect
+  arrays and coordinates with cycle protection, exact integer boundaries,
+  finite extents, null/dangling annotations, and invalid widget geometry. They
+  do not cover a real-world PDF corpus, all page transforms, text encodings, or
+  a formal proof.
 
 | Geometry
-| At `c2b073e`, `rect_from_object` used `min` and `abs`, normalizing reversed
-  corners, while `detect_blocks_impl` silently skipped some malformed or
-  unresolved annotation/rectangle cases. The working diff rejects reversed,
-  non-finite, and lossy integer coordinates, resolves one-level indirect
-  rectangles, and returns structured errors for malformed annotations and
-  widget rectangles. Coordinates remain `f32` PDF user-space values.
-| The diff removes silent normalization and several silent skips, but remains
-  uncompiled and does not resolve page transforms, identity, Unicode decoding,
-  or the full consumer precision contract. Preserve those as explicit review
-  gates; do not claim complete geometry conformance.
+| At `c2b073e`, `rect_from_object` used `min` and `abs`; that behavior correctly
+  interpreted either order of the two diagonal PDF `/Rect` corners. The initial
+  session patch incorrectly rejected reversed corner pairs, rejected integers
+  outside `f32` exact range, and treated some null/dangling annotation objects
+  as errors. Revision `9f9370e` restores PDF corner-order semantics, widens the
+  `Block` numeric representation to `f64`, resolves chained indirect rectangle
+  and coordinate references with cycle protection, and preserves
+  null/dangling annotation skip behavior. Missing, unresolved,
+  malformed, non-finite, or unrepresentable widget rectangles fail with
+  `BW_PDF_WIDGET_RECT_INVALID`. Three new public error codes and the numeric
+  surface are versioned in `pdftool_core` `0.2.0`.
+| Rust CI passed at `9f9370e`. The geometry/identity response contract,
+  error-code compatibility, and the application of the no-silent-transform
+  contract still require owner review. Page rotations/transforms, identity,
+  Unicode decoding, and full PDF corpus conformance remain out of scope here.
 
 | Field identity
 | `Block` is `{label,x,y,width,height}`. Detection does not return an explicit
@@ -254,12 +304,13 @@ independent of the FFP and geometry changes and should be a separate change set.
 === Actions
 
 Remote evidence rechecked on 2026-11-01. `origin/main` is
-`3fd5ba1ed3deee22288d3441b1f3a833246995e2` (#75); this session branch is at
-`c2b073e` (#74). Both tips are shallow/grafted in this checkout, so ancestry is
-not inferred. Main's
-latest push-triggered Rust CI run, `38818494415` (2026-10-15, actor
-`hyperpolymath`), passed formatting, unit tests, and Clippy. That run does not
-include this branch's detector changes.
+`3fd5ba1ed3deee22288d3441b1f3a833246995e2` (#75); this branch forked from
+`c2b073e` (#74), and PR #78's current implementation revision is
+`9f9370e206ae8cc6dd3ac86cba3f0904e4838135`. The branch incorporated main in
+`4a7be9e` and documentation commit `1cf6ea3`; local recon had been taken before
+those remote updates. Main Rust run `38818494415` and PR Rust run `41326285595`
+both passed formatting, tests, and Clippy; the PR run executed all 22 tests at
+`9f9370e`.
 
 The same main push (actor `hyperpolymath`) failed Governance run `38818495000`
 at `governance / Actions lockfile verify` and Lock Sync Gate run `38818494312`
@@ -269,14 +320,18 @@ while the workflow uses v0.5.0. Mirror run `38818495057` (actor `hyperpolymath`)
 mirror-bitbucket, mirror-gitea, mirror-disroot, and mirror-codeberg; GitLab,
 SourceHut, and Radicle succeeded. Causes remain unknown.
 
-Scheduled CodeQL run `41099036814` (2026-10-30, actor `hyperpolymath`) failed at
-`Set up job` for both analysis jobs; Hypatia run `41255373342` (2026-11-01,
-actor `hyperpolymath`) failed at `Set up job`. Log downloads for these and the
-mirror/lock runs returned EOF, so their causes
-are not established. Secret Scanner run `38818495110` and Pages run
-`38818494311` passed on the same main push, also triggered by `hyperpolymath`.
-These are remote observations, not local test execution. The current branch
-still has no passing CI evidence.
+Scheduled CodeQL run `41099036814` (2026-10-30) and Hypatia run `41255373342`
+(2026-11-01) failed at `Set up job`; latest PR CodeQL run `41326285683` and
+Hypatia run `41326285619` fail at the same setup boundary. PR Lock Sync run
+`41326285660` also fails; its log download returned EOF, with lock drift still
+visible in the checked files. Causes of the setup failures are unknown. Main
+Secret Scanner run `38818495110` passed; on the latest PR update, Rust
+`41326285595`, GitGuardian, SonarCloud, and Semgrep scan `258901955` passed.
+CodeRabbit was skipped. Earlier PR Governance and Secret Scanner runs
+`41325016132` and `41325016140` failed before jobs with a generic workflow-file
+issue; cause is unconfirmed. These are remote observations, not local test
+execution. The PR Rust check passes, but the overall PR remains blocked by the
+lock/analysis failures and the stale `CHANGES_REQUESTED` review.
 
 . Regenerate `.github/workflows/actions.lock` with the prescribed
   `gh actions-lock` tooling after the #74 action bump. Do not hand-edit the
@@ -290,11 +345,10 @@ still has no passing CI evidence.
   Inspect the run-page annotation as well as REST/run summaries: a lockfile
   refusal and an org policy refusing bot-triggered Actions are distinct. A run
   with zero jobs is not evidence that Rust tests passed or failed.
-. Refresh `docs/ci/CHECK-DETERMINATIONS.adoc` from exact current evidence. The
-  Rust core row predates passing main run `38818494415` at `3fd5ba1`; the Lock
-  Sync Gate row incorrectly says “Fixed” despite the post-#74 drift. Record the
-  new IDs, actor, step results, and unresolved scheduled/mirror failures without
-  claiming that this branch was tested.
+. Keep `docs/ci/CHECK-DETERMINATIONS.adoc` synchronized to the exact evidence.
+  It now records main and PR Rust successes separately, the PR lock failure,
+  setup-step failures, and no-job workflow runs. Preserve the unresolved causes;
+  do not infer a green overall PR from the Rust check.
 . Triage mirror failures separately. Run `38818495057` failed in
   mirror-bitbucket, mirror-gitea, mirror-disroot, and mirror-codeberg; GitLab,
   SourceHut, and Radicle passed. Record those outcomes, but do not guess whether
@@ -458,6 +512,32 @@ references `quality.yml`. Confirm the active runner mapping before asserting
 that CI already enforces SEAMS-SPEC. Until a real seam gate runs, record the
 deferral honestly rather than claiming conformance.
 
+=== Suggested prompt for Standards maintainers
+
+[source,text]
+----
+Please resolve the following normative questions before Blocky Writer declares
+its test-only producer-to-Presswerk seam conformant:
+
+1. SEAMS-SPEC requires repo-relative `contract` and runnable local `test_ref`,
+   while the FFP PRINT-PATH example points both at the Standards checkout. What
+   is the approved child-repository pinning/local-test pattern?
+2. How should the FFP example's `failure_mode: fail-degrade` and
+   `tier: external-trust` be reconciled with SEAMS-SPEC §7's tier requirement?
+   Does the external-trust circuit-breaker clause apply to a file handoff, and
+   if so, what is the minimum non-runtime interpretation?
+3. Please confirm the intended A2ML/DEED grammar and conformance source: the
+   A2ML supersession warning conflicts with DEED-GRAMMAR-SPEC still being draft.
+   We will not assume either an obsolete parser or an unratified dialect.
+4. Please confirm the local proof-verifier mapping in
+   3-practice/PROOF-POLICY.adoc for Rust implementation, API/ABI properties,
+   and mathematical theory, and what evidence must accompany a claimed Grade 3
+   Agda result.
+
+No Standards files or issue are being changed by Blocky Writer. We will keep
+any P2P integration test local and test-only, with no runtime engine.
+----
+
 === Acceptance
 
 * A non-empty successful fill carries the correct FFP declaration in catalog
@@ -479,21 +559,24 @@ deferral honestly rather than claiming conformance.
 
 === Goal
 
-Make detection behavior observable and contractual before changing geometry or
-field identity. Preserve the two-function WASM boundary and the documented
-name-driven fill semantics.
+Record and test the detector behavior now implemented, then hold further
+geometry or identity changes behind owner-approved contracts. Preserve the
+two-function WASM boundary and the documented name-driven fill semantics.
 
 === 2A. Test the current detector directly
 
-The current working diff adds eleven direct `detect_blocks_impl` tests using a
-synthetic PDF: valid user-space widgets and labels, a valid non-widget
-annotation, empty/malformed/unresolved page `/Annots`, direct and indirect
-`/Rect`, malformed and reversed rectangles, precision-losing integer values,
-and unresolved/non-dictionary annotations. Together with the six original
-fill/error tests there are 17 test functions in source. None has run yet.
+Implementation revision `9f9370e` has 22 test functions using synthetic
+PDFs: six fill/error tests, fourteen direct detector tests, and two direct
+numeric-geometry tests. Coverage includes valid widget labels, PDF-permitted
+corner orders, chained indirect arrays and coordinates with cycle protection,
+exact integer boundaries, finite extent checks, null/dangling annotation
+handling, missing/unresolved rectangles, malformed annotation objects, and
+non-widget annotations. Rust CI run `41326285595` passed formatting, all tests,
+and Clippy for that exact revision. These tests do not establish general PDF
+conformance or a formal proof.
 
-Before treating this coverage as accepted, run it and add or explicitly defer the
-remaining cases:
+Before treating the coverage as complete, add or explicitly defer the remaining
+cases:
 
 * multiple pages, annotation ordering, duplicate partial labels, nested field
   parents, full versus partial names, multiple widgets per field, and fallback
@@ -503,34 +586,61 @@ remaining cases:
 * PDFDocEncoding and UTF-16BE/BOM text, non-ASCII labels, significant leading/
   trailing spaces, and embedded NUL handling.
 
-The existing tests assert faithful results or structured refusals. Do not bake
-in `min`/`abs`, lossy decoding, trim, or skip behavior merely because that is
-what the implementation used to do. Keep coordinate transforms, field identity,
-and text decoding unchanged until their contracts are reviewed.
+The tests assert PDF-defined corner-pair interpretation or structured refusals.
+Do not add transforms beyond the PDF object semantics; retain null/dangling
+optional annotation handling, but do not silently discard malformed widget
+geometry. Keep page transforms, field identity, and text decoding unchanged
+until their contracts are reviewed.
 
 === 2B. Resolve the contract before changing behavior
 
-The current composition contract says no component silently normalizes page
-geometry. The working diff removes `min`/`abs` normalization and returns a
-structured error for reversed or unrepresentable widget rectangles. This is a
-provisional refusal policy, not a claim that the complete PDF rectangle and
-coordinate contract has been approved. Review it against the PDF contract and
-consumer needs before merging.
+The composition contract forbids silent geometry transformation. PDF `/Rect`
+semantics permit the two diagonal corners in either order, so the detector's
+`min`/`max` step is the format-defined interpretation required to produce
+`{x,y,width,height}`—not an application-side coordinate repair. Revision
+`9f9370e` applies that rule, resolves chained indirect rectangle and numeric
+references with cycle protection, widens `Block` coordinates to `f64`, and
+rejects missing, unresolved, malformed, non-finite, or unrepresentable widget
+geometry with `BW_PDF_WIDGET_RECT_INVALID`. Null or dangling optional
+annotation entries remain absent, matching existing behavior. This
+implementation has remote Rust CI evidence, but geometry and compatibility
+owner review remains open; treat the behavior as provisional until that review
+is recorded.
 
-Before finalizing the behavior, agree on:
+Before closing the contract gate, agree on:
 
-. the accepted PDF rectangle invariant and whether malformed geometry yields a
-  structured error, an explicit unsupported record, or a documented refusal;
-. the coordinate reference frame and units (the current values are raw PDF user
-  space, not transformed screen coordinates);
-. page identity and ordering, including rotations/page boxes and whether
-  coordinates are returned as authored or transformed;
-. numeric representation/rounding and acceptable precision; and
+. the PDF `/Rect` pair semantics and refusal behavior for malformed geometry;
+. the coordinate reference frame and units (raw PDF user space, with no screen,
+  page-rotation, or page-box transform in this response);
+. page identity and ordering, including whether a future version returns page
+  numbers or hierarchical field identity;
+. `f64` range/rounding behavior and the three new public error codes; and
 . text decoding/normalization rules for PDF field names and display labels.
 
-Do not expose a best-effort number as exact geometry. If the existing `f32`
-shape cannot satisfy the selected precision contract, version the response
-shape deliberately before consumers rely on it; do not add a third WASM export.
+The PR bumps `pdftool_core` to `0.2.0` to mark its breaking numeric/error
+contract. Keep exactly the existing two WASM exports; do not expose a rounded
+number as exact geometry or add an unversioned transform.
+
+=== Suggested prompt for DocMatrix maintainers
+
+[source,text]
+----
+Please review the geometry and compatibility boundary for Blocky Writer's
+`detect_blocks` result. PR #78 interprets PDF `/Rect` diagonal corner pairs in
+either permitted order, resolves indirect numeric values, returns raw PDF
+user-space `f64` coordinates, and fails malformed/unrepresentable widget
+geometry with explicit `BW_*` errors. `pdftool_core` is bumped to 0.2.0; WASM
+still exposes exactly two functions. Rust CI passes, but owner review is pending.
+
+Please confirm whether this is consistent with the DocMatrix composition
+contract, especially the distinction between PDF-defined corner interpretation
+and prohibited silent coordinate transforms. Also advise whether the present
+widget-listing result should remain explicitly non-interchange data until a
+consumer requests a versioned contract, and which future identity/page/label
+fields must be specified before that API is treated as stable. We are not
+proposing a runtime engine, shared serializer, third WASM export, page transform,
+or cross-repository code change.
+----
 
 === 2C. Separate display label from field identity
 
@@ -565,18 +675,21 @@ visual-block, ruled-line, baseline, or per-character-cell detection.
 
 === Acceptance
 
-* Each detection behavior is asserted in a direct Rust test; malformed geometry
-  and annotations cannot disappear silently without an explicit contract.
-* Valid page coordinates are preserved under the agreed coordinate contract;
-  no unannounced `min`/`abs`, lossy cast, coordinate transform, or text rewrite
-  is introduced.
-* The output either carries an explicitly versioned identity/coordinate shape
-  accepted by its consumer, or remains documented as a widget listing that is
-  not an interchange API.
+* The 22 current test functions pass in a recorded Rust CI run; malformed
+  widget geometry fails explicitly, while PDF-null/dangling annotation entries
+  retain their previous absent-entry handling.
+* PDF-permitted corner ordering is interpreted by sorting each pair of
+  diagonally opposite coordinates. No screen/page transform, arbitrary geometry
+  repair, lossy integer cast, or text rewrite is introduced.
+* The output remains a widget listing, not a stable interchange API; its
+  numeric type/error changes are versioned in `pdftool_core` `0.2.0`.
 * WASM still has exactly two exports; fill remains name-driven; no existing
-  public `BW_*` code is renamed or repurposed, and every new code is covered.
-* The four-code API expansion receives the compatibility/version review required
-  by repository guidance before merge.
+  public `BW_*` code is renamed or repurposed, and all three new codes are
+  covered by tests.
+* DocMatrix/standards-owner geometry and error-compatibility review is recorded
+  before merge; the Rust tests do not substitute for this decision.
+* Proof claims follow Mathesis/Standards policy. A test receipt is not a Grade 3
+  theorem receipt; no formal proof is claimed until the mapped verifier runs.
 * `TEST-NEEDS.adoc` and other status docs reflect only tests that actually run.
 
 == Work package 3 — Formatrix Docs#61 and the A2ML question
@@ -653,6 +766,19 @@ contains no unrelated template-project identity. Keep it external; do not edit
 `rsr-template-repo` or broaden Blocky Writer's template obligations here. Do
 not use draft `RSR-SPEC-v2` as if it were ratified.
 
+=== Suggested prompt for RSR-template-repo maintainers
+
+[source,text]
+----
+For issue #200, could you consider a narrow mint-regression test: generate a
+child repository from the current template, then assert that its contributor
+guide targets the minted child (not the template), every documented path and
+command exists in that child, and no unrelated template-project identity
+remains? Blocky Writer has already corrected its own CONTRIBUTING guide in
+merged PR #73; this is only a template-side suggestion. We are not changing
+rsr-template-repo or treating the draft RSR-SPEC-v2 as ratified.
+----
+
 == Work package 5 — appearance generation follow-on
 
 FFP 1.0 recommends that the producer generate normal `/AP` streams because
@@ -667,6 +793,78 @@ states, preservation of pre-existing `/AP`, errors for unsupported appearances,
 and a real-viewer/print-rasterizer verification matrix first. Do not fold that
 work into the XMP marker change, do not claim PDF/A suitability, and do not
 remove the hazard declaration until generated appearances are verified.
+
+=== Suggested prompt for Presswerk maintainers
+
+[source,text]
+----
+Following the D189 ruling on Presswerk #118, could you confirm the expected
+consumer-side behavior for a Blocky Writer-produced FFP PDF that declares
+`filledBy=machine` but has no generated `/AP` streams? Blocky Writer's first
+producer increment will truthfully omit or set `appearancesGenerated=false`,
+preserve existing XMP, and avoid claiming appearance generation. Please also
+identify the supported test-only invocation/interface for a deterministic
+producer-to-Presswerk P2P test and what classification/hazard assertions it
+should make. The test should not add a Presswerk runtime dependency or create a
+new integration engine. We will not edit Presswerk or reopen #118 without an
+owner request.
+----
+
+== Work package 6 — Mathesis proof-trace handoff
+
+The estate mathematics architecture at Mathesis commit `50a012d` says original
+repositories remain the sovereign owners of their proofs and Mathesis catalogs
+exact proof states and commit-level receipts. Standards proof policy at commit
+`46ee183` maps first-party Rust engineering to Creusot, API/ABI properties to
+Idris2, and mathematical theory to Agda (rechecked in Rocq and Lean). Do not
+invent a mathematical relationship or treat CI tests as a proof receipt.
+
+The phrase “Grade 3” is used precisely: under the Mathesis architecture it is
+an Agda proof that type-checks locally but has not been translated to an
+independent foundational system. `T3 — Standard` in Mathesis `PROOF-NEEDS` is a
+separate proof-tier label. This repository currently has no formal proof
+artifacts and no Grade 3 status. The Rust CI receipt is `TESTED`, not `PROVEN`.
+
+=== Suggested prompt for Mathesis maintainers
+
+[source,text]
+----
+Please review how this repository should be represented in Mathesis under the
+estate-mathematical-architecture and the current Standards proof policy. The
+Blocky Writer PR adds PDF /Rect corner interpretation, indirect numeric
+resolution, f64 geometry output, and explicit malformed-widget errors; its
+Rust CI tests pass, but there are no formal proof artifacts. Please clarify:
+
+1. Which theorem or engineering obligations belong in Blocky Writer's local
+   proof-status records, and which are merely test evidence or dependency
+   assumptions (lopdf 0.34)?
+2. Is the repository proof tier T3 — Standard, and which applicable proof
+   categories/archetype should its local proof-needs record use?
+3. For the geometry theorem, is a Grade 3 Agda witness appropriate, while
+   first-party Rust behavior and the WASM API/ABI follow the Standards
+   Creusot/Idris2 mapping? What exact statement and assumptions should be
+   recorded, and what receipt format/hash should Mathesis index?
+
+Please keep source proofs in Blocky Writer; Mathesis should catalogue their
+exact statuses and revisions rather than becoming a proof repository or a
+runtime dependency. Do not mark this work Grade 3 until the prescribed Agda
+check and receipt exist.
+----
+
+This is a proposed coordination prompt, not a posted issue or proof claim.
+
+=== Grade 3 completion gate
+
+The requested Grade 3 proofing is **not yet satisfied** by this branch. The code
+has no Agda witness or Mathesis receipt, and `agda` is unavailable in the
+sandbox. Before any Grade 3 claim, select an exact mathematical theorem, state
+its assumptions and its correspondence to the PDF geometry behavior, produce a
+locally type-checking Agda proof, and record its revision and checker receipt
+for Mathesis to catalogue. Track any Standards-required Rocq/Lean rechecks as
+separate evidence; they do not turn Rust CI into a proof. Until those receipts
+exist, status remains `TESTED`/`UNPROVEN`, not Grade 3 or `PROVEN`. If Grade 3
+is a merge prerequisite, this PR must remain blocked on that proof work as well
+as the current CI/review gates.
 
 == Cross-repository references and ownership
 
@@ -690,6 +888,17 @@ remove the hazard declaration until generated appearances are verified.
 | Governs any future versioned interop, geometry fidelity, provenance, loss
   reporting, replay, and independent verification.
 
+| https://github.com/hyperpolymath/standards/blob/46ee18323305d5b36e2eef936e47dd54c39ea736/3-practice/PROOF-POLICY.adoc[Standards proof policy]
+| Normative verifier mapping, checked at `46ee183` (2026-11-01).
+| Apply locally: Rust -> Creusot; API/ABI engineering -> Idris2; theory -> Agda,
+  with theory rechecks in Rocq and Lean. Do not edit the standards repo here.
+
+| https://github.com/hyperpolymath/mathesis/tree/50a012dba57fe90c9aca8d57241690c133ab117c[hyperpolymath/mathesis]
+| Estate proof catalogue; architecture defines Grade 3; `PROOF-NEEDS` records
+  its separate T3 — Standard proof tier.
+| Coordinate proof inventory/status only. The source repo owns proofs; no
+  Mathesis runtime dependency or external edit is proposed.
+
 | https://github.com/hyperpolymath/presswerk/issues/118[Presswerk#118] and
   https://github.com/hyperpolymath/standards/tree/3108c1b01186741eea80c00da3f4beda912286f9/1-formats/sub-specs/form-fill-provenance[FFP]
 | #118 is closed after ruling D189; FFP 1.0.0 is active/ratified. Presswerk is
@@ -704,25 +913,34 @@ remove the hazard declaration until generated appearances are verified.
 
 == Merge sequencing and stop conditions
 
+PR #78 is open at implementation revision `9f9370e`. Rust CI run
+`41326285595` passed, but Lock Sync `41326285660`, CodeQL `41326285683`, and
+Hypatia `41326285619` fail; the CodeRabbit check was skipped and its formal
+review on `0224ef6` still says `CHANGES_REQUESTED`. Do not merge or bypass these
+gates.
+
 [arabic]
-. **First:** repair the Actions lock and re-establish trustworthy health
-   records. Do not stack feature work on an unexplained workflow-file failure.
-. **Second:** get the standards owner answer for the seam contract/test path and
-   the A2ML/DEED status conflict. FFP marker implementation can be developed
-   independently, but do not declare the seam conformant until its P2P gate and
-   both Trustfile entries are real.
-. **Third:** add detector tests and agree the geometry/identity contract before
-   changing normalization, page semantics, or label decoding.
-. **Fourth:** carry out only the local producer and detector changes approved by
-   those gates, each in a scoped change set with tests and updated status docs.
-. **Finally:** send the optional #61 and #200 follow-ups to their owners; do not
+. **First:** repair the generated Actions lock with the prescribed tool and
+   re-establish trustworthy health records. Resolve the setup failures or obtain
+   owner-side evidence; do not attribute causes without logs.
+. **Second:** obtain DocMatrix/standards owner review of the PDF geometry
+   interpretation, three new `BW_*` codes, and `pdftool_core` `0.2.0` change.
+   PDF-defined corner-pair interpretation is supported; page transforms,
+   identity, and label decoding remain separate contract decisions.
+. **Third:** agree local proof scope with Standards and Mathesis. Apply the
+   verifier mapping; if a mathematical theorem is claimed at Grade 3, create and
+   run the local Agda proof and record its exact source revision/assumptions.
+   Rust tests alone cannot satisfy that status. Keep source proofs in this repo.
+. **Fourth:** complete FFP producer behavior and the producer-to-Presswerk seam
+   only after the normative test path and both Trustfile entries are real.
+. **Finally:** send the bounded #61 and #200 follow-ups to their owners; do not
    edit or close issues in those repositories as part of this plan.
 
 Stop and ask the relevant owner if any proposal requires a new runtime engine,
-a new mandatory hub/serializer, a third WASM export, silent geometry repair,
-lossy field-name normalization, a parser for an unspecified A2ML dialect,
-weakening a CI gate, or changing another repository. Those outcomes are not
-accepted by this plan.
+a new mandatory hub/serializer, a third WASM export, a geometry transform beyond
+PDF-defined semantics, lossy field-name normalization, a parser for an
+unspecified A2ML dialect, weakening a CI gate, or changing another repository.
+Those outcomes are not accepted by this plan.
 
 == Source index
 
@@ -738,6 +956,12 @@ accepted by this plan.
   https://github.com/hyperpolymath/standards/blob/3108c1b01186741eea80c00da3f4beda912286f9/docs/SEAMS-SPEC.adoc[SEAMS-SPEC].
 * FFP producer marker, print path, and vectors:
   https://github.com/hyperpolymath/standards/tree/3108c1b01186741eea80c00da3f4beda912286f9/1-formats/sub-specs/form-fill-provenance[FFP 1.0.0].
+* Standards proof policy:
+  https://github.com/hyperpolymath/standards/blob/46ee18323305d5b36e2eef936e47dd54c39ea736/3-practice/PROOF-POLICY.adoc[PROOF-POLICY.adoc].
+* Mathesis proof architecture and Grade 3 definition:
+  https://github.com/hyperpolymath/mathesis/blob/50a012dba57fe90c9aca8d57241690c133ab117c/estate-mathematical-architecture[estate-mathematical-architecture],
+  https://github.com/hyperpolymath/mathesis/blob/50a012dba57fe90c9aca8d57241690c133ab117c/docs/status/PROOF-NEEDS.adoc[PROOF-NEEDS.adoc], and
+  https://github.com/hyperpolymath/mathesis/blob/50a012dba57fe90c9aca8d57241690c133ab117c/docs/status/PROOF-STATUS.adoc[PROOF-STATUS.adoc].
 * A2ML/DEED status evidence:
   https://github.com/hyperpolymath/standards/blob/3108c1b01186741eea80c00da3f4beda912286f9/1-formats/a2ml/state/README.adoc[STATE supersession warning],
   https://github.com/hyperpolymath/standards/blob/3108c1b01186741eea80c00da3f4beda912286f9/1-formats/a2ml/meta/README.adoc[META supersession warning], and

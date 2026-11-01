@@ -25,8 +25,10 @@ SPDX-License-Identifier: MPL-2.0
 | Crate types | `cdylib`, `rlib` |
 | Licence | MPL-2.0 |
 | `#![forbid(unsafe_code)]` | yes |
-| Lines (`src/lib.rs`) | ~1030 |
-| Unit tests | 6 |
+| Lines (`src/lib.rs`) | See current source |
+| Unit tests | 22 (6 fill/error, 14 detector, 2 numeric-geometry) |
+| Current crate version | 0.2.0 |
+| PR Rust CI | Run `41326285595` at `9f9370e` passed fmt, tests, and Clippy |
 
 ## Dependencies
 
@@ -45,13 +47,27 @@ Nothing else. `Cargo.lock` is committed and CI runs with `--locked`.
 Two `#[wasm_bindgen]` exports, plus the `Block` struct they share:
 
 ```rust
-pub struct Block { pub label: String, pub x: f32, pub y: f32,
-                   pub width: f32, pub height: f32 }
+pub struct Block { pub label: String, pub x: f64, pub y: f64,
+                   pub width: f64, pub height: f64 }
 ```
 
 Everything else in the crate is private. `resolve_object`, `object_to_number`,
 `rect_from_object`, `object_to_text`, `dict_text`, the field-descriptor walkers
 and `apply_field_value` are internal machinery.
+
+## Geometry and error contract
+
+`/Rect` supplies two diagonal corners in PDF user space; PDF permits either
+corner order. Detection maps them to `{x, y, width, height}` using the PDF-defined
+interpretation and does not apply screen, rotation, or page-box transforms.
+Chained indirect `/Rect` arrays and numeric elements are resolved with
+reference-cycle protection. The output uses `f64` to preserve exactly
+representable PDF integer coordinates through
+binary64. Missing, unresolved, malformed, non-finite, or unrepresentable widget
+geometry fails detection with `BW_PDF_WIDGET_RECT_INVALID`. Null or dangling
+optional `/Annots` entries are treated as absent; malformed non-null entries
+fail with structured codes. The PR's three new error codes and numeric surface
+are included in crate version `0.2.0`.
 
 ## What `fill_blocks` does, in order
 
