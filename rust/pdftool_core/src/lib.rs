@@ -53,11 +53,9 @@ fn resolve_object(doc: &Document, obj: &Object) -> Result<Object, lopdf::Error> 
     }
 }
 
-/// Resolves a PDF number, returning `None` for unresolved or cyclic references,
-/// non-numbers, non-finite reals, or integers that cannot be represented exactly.
-fn object_to_number(doc: &Document, obj: &Object) -> Option<f64> {
+fn resolve_object_chain(doc: &Document, obj: &Object) -> Option<Object> {
     let mut resolved = obj.clone();
-    let mut references = HashSet::new();
+    let mut references = HashSet::<ObjectId>::new();
 
     loop {
         match resolved {
@@ -67,18 +65,26 @@ fn object_to_number(doc: &Document, obj: &Object) -> Option<f64> {
                 }
                 resolved = doc.get_object(id).ok()?.clone();
             }
-            Object::Integer(value) => {
-                let converted = value as f64;
-                // Reject integers outside f64's exact range rather than
-                // silently presenting rounded coordinates to callers.
-                return ((converted as i128) == (value as i128)).then_some(converted);
-            }
-            Object::Real(value) => {
-                let converted = f64::from(value);
-                return converted.is_finite().then_some(converted);
-            }
-            _ => return None,
+            value => return Some(value),
         }
+    }
+}
+
+/// Resolves a PDF number, returning `None` for unresolved or cyclic references,
+/// non-numbers, non-finite reals, or integers that cannot be represented exactly.
+fn object_to_number(doc: &Document, obj: &Object) -> Option<f64> {
+    match resolve_object_chain(doc, obj)? {
+        Object::Integer(value) => {
+            let converted = value as f64;
+            // Reject integers outside f64's exact range rather than
+            // silently presenting rounded coordinates to callers.
+            ((converted as i128) == (value as i128)).then_some(converted)
+        }
+        Object::Real(value) => {
+            let converted = f64::from(value);
+            converted.is_finite().then_some(converted)
+        }
+        _ => None,
     }
 }
 
@@ -721,10 +727,10 @@ fn detect_blocks_impl(pdf_data: &[u8]) -> CoreResult<Vec<Block>> {
                     )),
                 )
             })?;
-            let rect_obj = resolve_object(&doc, rect_obj).map_err(|err| {
+            let rect_obj = resolve_object_chain(&doc, rect_obj).ok_or_else(|| {
                 core_error_with_context(
                     "BW_PDF_WIDGET_RECT_INVALID",
-                    format!("could not resolve widget Rect: {err}"),
+                    "could not resolve widget Rect or encountered an indirect-reference cycle",
                     Some(format!(
                         "page {} annotation {}",
                         page_number,
@@ -979,6 +985,86 @@ mod tests {
         save_fixture_doc(&mut doc)
     }
 
+    fn fixture_with_first_widget_chained_indirect_rect(pdf_data: &[u8], rect: Object) -> Vec<u8> {
+        let indirect_pdf = fixture_with_first_widget_indirect_rect(pdf_data, rect);
+        let mut doc = Document::load_mem(&indirect_pdf).expect("load indirect-Rect fixture");
+        let page_id = *doc
+            .get_pages()
+            .values()
+            .next()
+            .expect("fixture has one page");
+        let widget_id = {
+            let page = doc
+                .get_object(page_id)
+                .expect("fixture page exists")
+                .as_dict()
+                .expect("fixture page is a dictionary");
+            let annots = page
+                .get(b"Annots")
+                .expect("fixture page has Annots")
+                .as_array()
+                .expect("fixture Annots is an array");
+            match annots.first().expect("fixture has a widget annotation") {
+                Object::Reference(id) => *id,
+                _ => panic!("fixture widget must be indirect"),
+            }
+        };
+        let rect_id = {
+            let widget = doc
+                .get_object(widget_id)
+                .expect("fixture widget exists")
+                .as_dict()
+                .expect("fixture widget is a dictionary");
+            match widget.get(b"Rect").expect("fixture widget has Rect") {
+                Object::Reference(id) => *id,
+                _ => panic!("fixture Rect must be indirect"),
+            }
+        };
+        let chained_id = doc.new_object_id();
+        doc.objects.insert(chained_id, Object::Reference(rect_id));
+        doc.get_object_mut(widget_id)
+            .expect("fixture widget exists")
+            .as_dict_mut()
+            .expect("fixture widget is a dictionary")
+            .set(b"Rect", Object::Reference(chained_id));
+        save_fixture_doc(&mut doc)
+    }
+
+    fn fixture_with_first_widget_cyclic_indirect_rect(pdf_data: &[u8]) -> Vec<u8> {
+        let mut doc = Document::load_mem(pdf_data).expect("load fixture PDF");
+        let page_id = *doc
+            .get_pages()
+            .values()
+            .next()
+            .expect("fixture has one page");
+        let widget_id = {
+            let page = doc
+                .get_object(page_id)
+                .expect("fixture page exists")
+                .as_dict()
+                .expect("fixture page is a dictionary");
+            let annots = page
+                .get(b"Annots")
+                .expect("fixture page has Annots")
+                .as_array()
+                .expect("fixture Annots is an array");
+            match annots.first().expect("fixture has a widget annotation") {
+                Object::Reference(id) => *id,
+                _ => panic!("fixture widget must be indirect"),
+            }
+        };
+        let first_id = doc.new_object_id();
+        let second_id = doc.new_object_id();
+        doc.objects.insert(first_id, Object::Reference(second_id));
+        doc.objects.insert(second_id, Object::Reference(first_id));
+        doc.get_object_mut(widget_id)
+            .expect("fixture widget exists")
+            .as_dict_mut()
+            .expect("fixture widget is a dictionary")
+            .set(b"Rect", Object::Reference(first_id));
+        save_fixture_doc(&mut doc)
+    }
+
     fn fixture_with_first_widget_indirect_rect_coordinates(pdf_data: &[u8]) -> Vec<u8> {
         let mut doc = Document::load_mem(pdf_data).expect("load fixture PDF");
         let page_id = *doc
@@ -1220,11 +1306,21 @@ mod tests {
 
     #[test]
     fn detect_blocks_resolves_indirect_widget_rectangles() {
-        let pdf =
-            fixture_with_first_widget_indirect_rect(&make_fixture_pdf(), rect(50, 700, 250, 724));
+        let base = make_fixture_pdf();
+        let pdf = fixture_with_first_widget_indirect_rect(&base, rect(50, 700, 250, 724));
         let blocks = detect_blocks_impl(&pdf).expect("indirect Rect arrays should resolve");
         assert_eq!((blocks[0].x, blocks[0].y), (50.0, 700.0));
         assert_eq!((blocks[0].width, blocks[0].height), (200.0, 24.0));
+
+        let chained_pdf =
+            fixture_with_first_widget_chained_indirect_rect(&base, rect(50, 700, 250, 724));
+        let chained_blocks =
+            detect_blocks_impl(&chained_pdf).expect("chained indirect Rect arrays should resolve");
+        assert_eq!((chained_blocks[0].x, chained_blocks[0].y), (50.0, 700.0));
+        assert_eq!(
+            (chained_blocks[0].width, chained_blocks[0].height),
+            (200.0, 24.0)
+        );
     }
 
     #[test]
@@ -1293,7 +1389,7 @@ mod tests {
 
     #[test]
     fn object_to_number_preserves_f64_integer_boundaries() {
-        let doc = Document::with_version("1.7");
+        let mut doc = Document::with_version("1.7");
 
         assert_eq!(
             object_to_number(&doc, &Object::Integer(16_777_217)),
@@ -1311,6 +1407,21 @@ mod tests {
             object_to_number(&doc, &Object::Integer(9_007_199_254_740_993)),
             None
         );
+
+        let inner_id = doc.new_object_id();
+        doc.objects.insert(inner_id, Object::Integer(42));
+        let outer_id = doc.new_object_id();
+        doc.objects.insert(outer_id, Object::Reference(inner_id));
+        assert_eq!(
+            object_to_number(&doc, &Object::Reference(outer_id)),
+            Some(42.0)
+        );
+
+        let first_id = doc.new_object_id();
+        let second_id = doc.new_object_id();
+        doc.objects.insert(first_id, Object::Reference(second_id));
+        doc.objects.insert(second_id, Object::Reference(first_id));
+        assert_eq!(object_to_number(&doc, &Object::Reference(first_id)), None);
         assert_eq!(object_to_number(&doc, &Object::Real(f32::NAN)), None);
         assert_eq!(object_to_number(&doc, &Object::Real(f32::INFINITY)), None);
     }
@@ -1361,6 +1472,12 @@ mod tests {
         );
         assert_error_code(
             detect_blocks_impl(&unresolved_coordinate),
+            "BW_PDF_WIDGET_RECT_INVALID",
+        );
+
+        let cyclic_rect = fixture_with_first_widget_cyclic_indirect_rect(&make_fixture_pdf());
+        assert_error_code(
+            detect_blocks_impl(&cyclic_rect),
             "BW_PDF_WIDGET_RECT_INVALID",
         );
     }
