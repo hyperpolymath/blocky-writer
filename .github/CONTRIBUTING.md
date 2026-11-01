@@ -6,10 +6,11 @@ SPDX-License-Identifier: MPL-2.0
 # Contributing to blocky-writer
 
 **Read `README.adoc` first.** The short version of where this project stands:
-the Rust/WASM core (`rust/pdftool_core`) is implemented, unit-tested and green
-in CI. The AffineScript frontend (`src/*.affine`) is a prototype with no build
-pipeline in this checkout. Nothing here is release-ready as a Firefox extension
-yet.
+the Rust/WASM core (`rust/pdftool_core`) is implemented and unit-tested. The
+main baseline passed and PR #78 implementation revision `9f9370e` passed the
+Rust CI job (run `41326285595` for the latter); other PR gates remain red. The
+AffineScript frontend (`src/*.affine`) is a prototype with no build pipeline in
+this checkout. Nothing here is release-ready as a Firefox extension yet.
 
 ---
 
@@ -135,8 +136,10 @@ See `SECURITY.adoc`.
    cargo clippy --manifest-path rust/pdftool_core/Cargo.toml --locked --all-targets -- -D warnings
    ```
 
-   `cargo test` runs 6 tests. If you get a different number, something changed
-   and the wiki is stale — fix the wiki too.
+   The current `pdftool_core` source has 22 unit-test functions: 6 fill/error
+   tests, 14 detector tests, and 2 numeric-geometry tests. If the count changes,
+   update `TEST-NEEDS.adoc`, `EXPLAINME.adoc`, and the wiki in the same change.
+   Unit-test success is not a formal proof or general PDF conformance result.
 
    If you cannot run these — no Rust toolchain, no crates.io access — **say so
    explicitly in the PR** rather than implying you did. CI is the only authority

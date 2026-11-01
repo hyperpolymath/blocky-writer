@@ -63,6 +63,26 @@ only job in that workflow:
 
 ## Known problems — read before you trust a green
 
+* **Rust CI evidence (2026-11-01).** Main passed on `3fd5ba1` in run
+  `38818494415`. PR #78 implementation commit `9f9370e` passed formatting, all
+  22 unit tests, and Clippy in run `41326285595`. This sandbox has no Rust
+  toolchain; these are remote CI receipts, not local runs.
+* **Current PR #78 blockers.** Lock Sync Gate run `41326285660` fails
+  `Verify lockfile synchronisation`: workflow YAML uses
+  `hyperpolymath/smtp-notify-action@v0.5.0`, while generated `actions.lock`
+  records `v0.3.0`. Do not hand-edit the lock; use the prescribed generator.
+  CodeQL run `41326285683` and Hypatia run `41326285619` fail at `Set up job`;
+  causes are unknown. GitGuardian, SonarCloud and Semgrep passed, including
+  Semgrep scan `258901955`. CodeRabbit was skipped; the prior
+  `CHANGES_REQUESTED` review has not been refreshed. Governance and Secret
+  Scanner runs `41325016132` and `41325016140` previously failed before creating
+  jobs with a generic workflow-file issue; causes are unconfirmed. See
+  `docs/ci/CHECK-DETERMINATIONS.adoc` for exact evidence.
+* **Other failures on current `main`.** Main Governance and Lock Sync Gate runs
+  `38818495000` and `38818494312` failed on the same visible lock drift;
+  scheduled CodeQL (`41099036814`), Hypatia (`41255373342`), and mirror
+  destinations (`38818495057`) also failed. Causes for setup/mirror failures
+  remain unknown.
 * **Two Pages workflows.** `pages.yml` and `casket-pages.yml` both build and
   deploy to the `github-pages` environment under the same `pages` concurrency
   group, so they cancel each other. `pages.yml` also looks for `README.md`,

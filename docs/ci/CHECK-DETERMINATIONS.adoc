@@ -7,6 +7,9 @@ The record required by the estate stopping rule (hyperpolymath/standards#968,
 #994): every CI check that has ever been red on `main` has exactly one of three
 determinations -- *fixed*, *retired*, or *exempt* -- and none is ever closed by
 muting it (`continue-on-error`, demotion to a warning, or silent removal).
+The current-main snapshot below identifies active failures that are still
+unresolved; this ledger remains incomplete until each receives an evidence-based
+*fixed*, *retired*, or *exempt* determination. “Open” is not a fourth closure.
 
 == Ledger
 
@@ -37,39 +40,156 @@ muting it (`continue-on-error`, demotion to a warning, or silent removal).
   gone until the thing it would build exists.
 
 | `rust-core` (CI)
-| *Fixed -- awaiting one owner-triggered green run on `main`*
-| 2026-09-27
+| *Fixed on `main` and PR #78 implementation revision `9f9370e`*
+| 2026-11-01
 | Replacement for both retired jobs: `cargo fmt -- --check`, `cargo test
-  --locked`, `cargo clippy --all-targets -- -D warnings` on
-  `rust/pdftool_core`. It did execute once, contrary to the previous revision
-  of this row: run 36296845297 (push, `e1b6225`, actor `hyperpolymath`) got as
-  far as three of its steps -- *Check formatting* `success`, *Run unit tests*
-  `success` (6/6), *Run Clippy* `failure`. Clippy was the only red step and it
-  reported exactly two lints, both in `rust/pdftool_core/src/lib.rs`:
-  `clippy::map_clone` on `doc.get_object(*id).map(Clone::clone)` and
-  `clippy::unnecessary_cast` on `Object::Real(v) => Some(*v as f32)`. Both are
-  repaired in #73 (`.cloned()` and `Some(*v)` respectively); neither repair
-  weakens the gate, and the adjacent `Object::Integer(v) => Some(*v as f32)`
-  is deliberately left alone because that `i64` -> `f32` cast is real. The job
-  has *not* run with the repair in it: every run on #73's branch is
-  bot-triggered and refused at startup (<<actor>>), so the step is verified by
-  inspection only. This row therefore stays open until one run triggered by
-  `hyperpolymath` is green on `main`; if that run is red, the crate has a real
-  defect and this row becomes a repair item. It is not closed until such a run
-  exists.
+  --locked`, and `cargo clippy --all-targets -- -D warnings` on
+  `rust/pdftool_core`. The historical first run at `e1b6225` passed formatting
+  and six tests but failed two Clippy lints; #73 repaired those without
+  weakening the gate. Main push run `38818494415` at
+  `3fd5ba1ed3deee22288d3441b1f3a833246995e2` and PR run `41326285595` at
+  `9f9370e206ae8cc6dd3ac86cba3f0904e4838135` passed formatting, all 22 unit
+  tests, and Clippy. The latter validates the implementation revision only;
+  later Rust changes require a new receipt. Other PR gates remain unresolved.
 
 | `Lock Sync Gate` / `actions.lock is in sync with the workflow YAML`
-| *Fixed*
-| 2026-09-27
-| Red on `main` from #69 (2026-09-24) onward, and the cause of every other
-  workflow on `main` reporting `startup_failure` at d50a857 -- see
-  <<desync>>. Resynchronised in the fix for #67.
+| *Open — failing on current `main` and PR #78*
+| 2026-11-01
+| The fix for #67 was valid at the time, but the lock drifted again after #74.
+  Main run `38818494312` at `3fd5ba1` and latest PR run `41326285660` at
+  `9f9370e` failed `Verify lockfile synchronisation`. The current workflow uses
+  `hyperpolymath/smtp-notify-action@v0.5.0`; the generated lock still records
+  `@v0.3.0`. The supported `gh actions-lock` generator is unavailable in this
+  sandbox, so the lock has deliberately not been hand-edited.
 |===
 
-== Also red on `main`?
+== Current `main` run snapshot (2026-11-01)
 
-Yes, for both checks named in #67, and for reasons that have nothing to do
-with the `actions.lock` cure (#66) that surfaced them:
+Current `origin/main` is `3fd5ba1` (#75). PR #78's fork point is `c2b073e`
+(#74), and its implementation revision is `9f9370e` (after merge commit `4a7be9e`).
+The fork point and main
+snapshot are shallow/grafted in this checkout, so ancestry is not inferred.
+The following table records only outcomes on the stated main snapshot; PR #78
+results are listed separately below.
+
+[cols="2,1,1,3",options="header"]
+|===
+| Check / workflow | Run | Result | Evidence and current disposition
+
+| Rust core (`CI`)
+| `38818494415`
+| Passed
+| Push on `3fd5ba1`, actor `hyperpolymath`; formatting, tests, and Clippy all
+  succeeded. This is the main baseline; PR #78's separate Rust receipt is
+  `41326285595` at `9f9370e`.
+
+| Governance / Actions lockfile verify
+| `38818495000`
+| Failed
+| Push at `3fd5ba1`, actor `hyperpolymath`. Only `governance / Actions lockfile
+  verify` failed; its verification step failed. Other Governance jobs passed or
+  were explicitly skipped. Same visible lock drift as the standalone gate.
+
+| Lock Sync Gate
+| `38818494312`
+| Failed
+| Push at `3fd5ba1`, actor `hyperpolymath`; `Verify lockfile synchronisation`
+  failed. The workflow/lock mismatch is observable; do not replace the generated
+  lock by hand.
+
+| Mirror to Git Forges
+| `38818495057`
+| Failed
+| Push at `3fd5ba1`, actor `hyperpolymath`. mirror-bitbucket, mirror-gitea,
+  mirror-disroot, and mirror-codeberg failed; mirror-gitlab, mirror-sourcehut,
+  and mirror-radicle succeeded. Log retrieval
+  returned EOF; failure causes remain unknown.
+
+| CodeQL Advanced
+| `41099036814`
+| Failed
+| Scheduled run on `3fd5ba1`, actor `hyperpolymath`; both Analyze jobs failed at
+  `Set up job`. Log retrieval returned EOF, so cause is unknown.
+
+| Hypatia Security Scan
+| `41255373342`
+| Failed
+| Scheduled run on `3fd5ba1`, actor `hyperpolymath`;
+  `Hypatia Neurosymbolic Analysis` failed at `Set up job`. Log retrieval
+  returned EOF, so cause is unknown.
+
+| Secret Scanner / GitHub Pages
+| `38818495110` / `38818494311`
+| Passed
+| Both passed on the `3fd5ba1` main push, actor `hyperpolymath`.
+|===
+
+The only root cause established in this snapshot is the generated Actions lock
+drift. Do not attribute the setup-step or mirror failures to code, credentials,
+network, or remote policy without accessible evidence.
+
+== PR #78 run snapshot (implementation revision `9f9370e`)
+
+The session branch at `9f9370e206ae8cc6dd3ac86cba3f0904e4838135` passed the
+Rust workflow in run `41326285595`: formatting, all 22 unit tests, and Clippy
+passed. This includes chained indirect `/Rect` resolution and cycle checks. The
+receipt confirms CI-tested behavior for that exact implementation commit; it is
+not a formal proof, general PDF conformance result, or final merge receipt.
+
+[cols="2,1,1,3",options="header"]
+|===
+| Check / workflow | Run | Result | Evidence and current disposition
+
+| Rust core (`CI`)
+| `41326285595`
+| Passed
+| `Rust core (tests, formatting, lint)` passed all three steps at `9f9370e`.
+
+| Lock Sync Gate
+| `41326285660`
+| Failed
+| `Verify lockfile synchronisation` failed. The generated action lock remains
+  out of sync; its visible `smtp-notify-action` entry is stale. Do not hand-edit it.
+
+| CodeQL Advanced
+| `41326285683`
+| Failed
+| `Analyze (actions)` and `Analyze (javascript-typescript)` failed at `Set up job`.
+  Cause unknown; logs were unavailable.
+
+| Hypatia Security Scan
+| `41326285619`
+| Failed
+| `Hypatia Neurosymbolic Analysis` failed at `Set up job`. Cause unknown; logs
+  were unavailable.
+
+| Governance / Secret Scanner (earlier PR runs)
+| `41325016132` / `41325016140`
+| Failed before jobs
+| GitHub reported a generic workflow-file issue and created no jobs. Cause not
+  established; do not infer it from the lock gate alone.
+
+| GitGuardian / SonarCloud / Semgrep
+| PR checks / scan `258901955`
+| Passed
+| These providers reported green on the `9f9370e` implementation revision.
+
+| CodeRabbit
+| PR check / review
+| Skipped / changes requested
+| The check was skipped after review allowance was exhausted. The prior review
+  is still `CHANGES_REQUESTED` on `0224ef6`; it has not been refreshed after the
+  later code revisions.
+|===
+
+The pull request remains blocked. Do not bypass the failed lock/analysis gates or
+the outstanding review decision. If the implementation changes, record and use
+new run IDs rather than carrying these receipts forward.
+
+== Historical red checks for #67
+
+At the time of #67, both checks named in that fix were red for reasons that had
+nothing to do with the `actions.lock` cure (#66) that surfaced them:
 
 * `core-fill-tests` and `extension-build` were red on every run since #43,
   which predates #66 by a month. #66 revived the workflow that runs them; it

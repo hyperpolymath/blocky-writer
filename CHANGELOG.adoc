@@ -46,13 +46,18 @@ not repeated verbatim — where a commit subject was mangled or carried an inlin
 
 ==== Fixed
 
+* `+rust/pdftool_core+`: `+detect_blocks+` now accepts either PDF-defined
+  diagonal `/Rect` corner order, resolves indirect rectangle and numeric-object
+  chains with cycle protection, and reports malformed widget geometry using a
+  structured `+BW_PDF_WIDGET_RECT_INVALID+` error.
 * `+rust/pdftool_core+`: resolved the two Clippy lints that were the only thing
   keeping the `+Rust core (tests, formatting, lint)+` job red —
   `+clippy::map_clone+` on `+doc.get_object(*id).map(Clone::clone)+` (now
   `+.cloned()+`) and `+clippy::unnecessary_cast+` on
   `+Object::Real(v) => Some(*v as f32)+` (now `+Some(*v)+`). The adjacent
-  `+Object::Integer+` cast was left alone because that `+i64+` → `+f32+` cast is real.
-  (#73)
+  `+Object::Integer+` cast was left alone because that `+i64+` → `+f32+` cast was real
+  at crate version 0.1.0. Version 0.2.0 subsequently widens the public `+Block+`
+  surface to `+f64+` (see *Changed* above). (#73)
 * `+rust/pdftool_core+`: `+rustfmt+` applied so the formatting step of the
   `+rust-core+` job passes. (e1b6225)
 * `+actions.lock+` resynchronised after the #69/#70/#71 desync that startup-killed
@@ -77,6 +82,9 @@ not repeated verbatim — where a commit subject was mangled or carried an inlin
 
 ==== Changed
 
+* `+rust/pdftool_core+` bumped to `+0.2.0+`; public `+Block+` coordinates now
+  use `+f64+`, and three new `+BW_*+` detector error codes are versioned as a
+  breaking contract change. Review compatibility before downstream adoption.
 * `+.machine_readable/+` migrated from 6SCM to 6A2 (`+.scm+` → `+.a2ml+`).
 * `+README.adoc+` gained an *Ecosystem position* section stating the boundary and
   linking the other suite components, satisfying the first acceptance criterion

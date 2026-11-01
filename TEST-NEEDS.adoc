@@ -3,7 +3,7 @@
 
 === CRG Grade: C — ACHIEVED 2026-04-04
 
-Last reviewed: 2026-09-27.
+Last reviewed: 2026-11-01.
 
 === Current Test State
 
@@ -12,17 +12,25 @@ Last reviewed: 2026-09-27.
 |Category |Count |Notes
 |Test directories |1 |Location(s): /tests (aspect + fuzz placeholder)
 |CI workflows |14 |`.github/workflows/*.yml`. `ci.yml` runs the Rust core checks; `actions.lock` is a file, not a workflow. See docs/ci/CHECK-DETERMINATIONS.adoc
-|Unit tests |6 |Rust `pdftool_core` — `cargo test --manifest-path rust/pdftool_core/Cargo.toml --locked`
+|Unit tests |22 in source |Rust `pdftool_core` — 6 fill/error tests, 14 detector tests, and 2 direct numeric-geometry tests. PR #78 implementation commit `9f9370e` passed formatting, all unit tests, and Clippy in run `41326285595`.
 |===
 
 === What's Covered
 
-* [x] Rust core unit tests (block detection, `fill_blocks_*` AcroForm writeback for
-  `Tx`/`Ch`/`Btn` fields, taxonomy errors) — 6 tests, all green on `main` at `e1b6225`
-* [x] `cargo fmt -- --check` in CI — green
-* [x] `cargo clippy --all-targets -- -D warnings` in CI — green (the two remaining
-  lints were fixed in #73)
-* [x] `actions.lock` synchronisation gate (`lock-sync-gate.yml`) — green on `main`
+* [x] Rust core baseline CI on `main` — run `38818494415` at `3fd5ba1`
+  passed formatting, tests, and Clippy (actor `hyperpolymath`). That run is
+  baseline evidence only.
+* [x] PR #78 implementation revision `9f9370e` — run `41326285595` passed
+  formatting, all 22 unit tests, and Clippy. The synthetic fixtures exercise
+  PDF-defined corner ordering, chained indirect rectangles and numeric
+  references (including cycles), exact integer boundaries, null/dangling
+  annotations, and missing/unresolved/malformed widget geometry.
+  This is not real-world PDF corpus coverage or a formal proof receipt.
+* [ ] `actions.lock` synchronisation gate — failing on PR run `41326285660`
+  and main run `38818494312`; the YAML uses `smtp-notify-action@v0.5.0` while
+  generated lock metadata records `v0.3.0`. Do not hand-edit the generated file.
+* [ ] CodeQL and Hypatia — current PR jobs fail during `Set up job`; causes are
+  unknown, and the logs were unavailable.
 
 === Still Missing (for CRG B+)
 

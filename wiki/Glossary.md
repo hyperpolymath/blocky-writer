@@ -39,8 +39,9 @@ SPDX-License-Identifier: MPL-2.0
   [berrywiki](https://github.com/metadatastician/berrywiki).
 
 **Block**
-: The struct blocky-writer exports: `{ label, x, y, width, height }`. One per
-  detected widget annotation. Coordinates are PDF user-space, `f32`.
+: The struct blocky-writer returns for each detected widget annotation:
+  `{ label, x, y, width, height }`. Coordinates are PDF user-space `f64` values;
+  no screen or page-rotation transform is applied.
 
 **CLADE**
 : A taxonomy declaration in `.machine_readable/CLADE.a2ml`, registered with
@@ -78,5 +79,8 @@ SPDX-License-Identifier: MPL-2.0
   Only the run's web-page annotation distinguishes them.
 
 **Widget annotation**
-: An annotation with `/Subtype /Widget`. `detect_blocks` keeps only these, and
-  only when they carry a usable `/Rect`.
+: An annotation with `/Subtype /Widget`. `detect_blocks` requires a valid
+  `/Rect`; missing, unresolved, malformed, non-finite, or unrepresentable widget
+  geometry fails the detection call with `BW_PDF_WIDGET_RECT_INVALID`. Null or
+  dangling `/Annots` entries are treated as absent, while malformed non-null
+  annotations fail with a structured error.
