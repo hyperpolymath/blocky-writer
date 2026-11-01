@@ -65,7 +65,7 @@ EXTENSION LAYERS
   Extension bundle pipeline         ░░░░░░░░░░   0%    deno.json removed in #43; no toolchain
 
 CORE (RUST/WASM)
-  pdftool_core (WASM)               ████████░░  80%    Main baseline passes CI; 17 tests in source, 11 new detector tests unverified
+  pdftool_core (WASM)               ████████░░  80%    Main baseline (3fd5ba1) passes CI; 80% covers main only; 17 tests in source, 11 new detector tests unverified
   AcroForm Writeback                ████████░░  80%    Tx / Ch / Btn only; no Sig
   Ruled-line & cell detection       ░░░░░░░░░░   0%    NOT IMPLEMENTED — the "hand spacing" case
   Error Taxonomy                    ████████░░  80%    24 codes in source; 4 new codes need Rust + compatibility review
