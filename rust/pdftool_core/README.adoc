@@ -10,8 +10,11 @@ Rust/WASM core for `blocky-writer`.
 * `fill_blocks` updates matching AcroForm field values and returns serialized
   PDF bytes. It supports the field types and validation covered by the unit
   tests; it is not a PDF renderer.
-* Core parsing and writeback behavior is covered by Rust unit tests in
-  `src/lib.rs`.
+* Synthetic-PDF unit tests in `src/lib.rs` cover representative widget detection,
+  rectangle/annotation validation, and selected `Tx` / `Ch` / `Btn` writeback
+  paths. They are not general PDF conformance tests or real-world corpus
+  coverage. The detector additions in the current session branch still require
+  formatting, compilation, tests, and Clippy before they can be called verified.
 
 == Native development checks
 

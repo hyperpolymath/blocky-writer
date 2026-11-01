@@ -53,8 +53,11 @@ cargo test   --manifest-path rust/pdftool_core/Cargo.toml --locked
 cargo clippy --manifest-path rust/pdftool_core/Cargo.toml --locked --all-targets -- -D warnings
 ```
 
-`cargo test` runs 6 tests. If you get a different number, something changed and
-the wiki is stale — fix the wiki.
+The current working source contains 17 test functions: six existing fill/error
+tests and eleven direct detector tests added in this branch. Those additions
+have not been compiled or run in this environment because the Rust toolchain is
+absent. Keep this count synchronized with `TEST-NEEDS.adoc`; CI, not the source
+count alone, determines whether they pass.
 
 ## Building the WASM package (optional)
 

@@ -1,0 +1,762 @@
+// SPDX-License-Identifier: CC-BY-SA-4.0
+= Blocky Writer ultraplan: FFP, geometry fidelity, and suite boundaries
+:doctype: book
+:toc: left
+:toclevels: 3
+:sectnums:
+:revdate: 2026-11-01
+:status: in-progress
+
+== Executive disposition
+
+This remains an evidence-backed plan with partial implementation in the session
+branch, not a completed change. The requested work has four separate
+owners/scopes and must not be collapsed into a new integration product:
+
+. Restore trustworthy repository health records and repair the current Actions
+  lock mismatch.
+. Bring Blocky Writer's *producer* into conformance with active, ratified FFP
+  1.0, then declare and test the existing Blocky Writer -> Presswerk handoff
+  under the estate's active SEAMS-SPEC.
+. Establish direct detection tests and resolve geometry/field-identity behavior
+  against the DocMatrix composition contract before changing that behavior.
+. Handle Formatrix Docs#61 and RSR-template-repo#200 as bounded, informational
+  follow-ups owned by those repositories; do not build a viewer/parser
+  integration or edit another repository here.
+
+The boundary remains explicit: Formatrix Docs owns multi-format viewing and
+editing; Blocky Writer owns fixed-layout PDF/form placement. DocMatrix#71 rejects
+a new runtime integration engine. A test-only producer-to-consumer check is not
+a runtime integration, but it must not create a runtime dependency or a new
+universal document serializer.
+
+== Current implementation status (2026-11-01)
+
+[cols="1,3",options="header"]
+|===
+| Work area | Current state on `arena/d32cfaf0-blocky-writer`
+
+| Detector geometry
+| The working diff rejects reversed, non-finite, and lossy integer widget
+  rectangles; resolves an indirect `/Rect`; and reports malformed annotation
+  arrays, unresolved/invalid annotations, and invalid widget rectangles with
+  structured errors. This adds four public `BW_*` codes; compatibility/version
+  review remains pending. Eleven direct detector tests and the six original
+  fill/error tests are present (17 test functions total). None has been
+  compiled or run on this branch.
+
+| FFP producer
+| Not implemented. `fill_blocks_impl` still writes no FFP XMP marker. Safe XMP
+  merging and marker tests have not been implemented or validated; no-op
+  semantics and truthful appearance metadata also remain open. Do not claim
+  producer conformance. This remains local implementation work once it can be
+  developed and verified without replacing or damaging existing XMP.
+
+| Producer-to-Presswerk seam
+| Not implemented. The standards-owner questions on contract/test paths,
+  `fail-degrade`/`external-trust`, and circuit-breaker applicability remain
+  unresolved. No Trustfile or Mustfile seam declaration has been added.
+
+| CI / lock
+| `origin/main` is at `3fd5ba1` (#75); this session branch is at `c2b073e`
+  (#74). Both commits are shallow/grafted in this checkout, so their ancestry is
+  not inferred. Current `main` still has `push-email-notify.yml` at v0.5.0 while the generated
+  lock records v0.3.0. Main's latest Rust CI run passed, but its Governance and
+  Lock Sync Gate runs failed on lock verification. The prescribed
+  `gh actions-lock` generator is unavailable here; the lock has not been edited.
+
+| Validation environment
+| `cargo`, `rustc`, `rustfmt`, `gawk`, `go`, and `asciidoctor` are absent from
+  `PATH`. Rust formatting, compilation, tests, Clippy, lock verification, and
+  AsciiDoc rendering therefore remain pending. Do not describe the working diff
+  as passing.
+
+| Estate follow-ups
+| No other repository or issue has been edited or closed. The A2ML/DEED
+  interpretation and SEAMS-SPEC gates remain as recorded below.
+|===
+
+== Recon snapshot and limits
+
+[cols="1,3",options="header"]
+|===
+| Item | Snapshot used
+
+| Blocky Writer
+| `c2b073eaf5e204f466adc0797484478ce94ef95b`, on the session branch
+  `arena/d32cfaf0-blocky-writer`; the checkout was clean before this plan was
+  written.
+
+| Estate standards
+| `hyperpolymath/standards` at
+  `3108c1b01186741eea80c00da3f4beda912286f9` (2026-10-09).
+
+| RSR template
+| `hyperpolymath/rsr-template-repo` at
+  `df09a6c50c4c77e93abac0fdf162509bf5648611` (2026-10-09).
+
+| Formatrix Docs
+| `hyperpolymath/formatrix-docs` at
+  `85e6692aaa544c0b2b7b41f156c11f3de25d95fc` (2026-10-09).
+
+| Presswerk
+| `hyperpolymath/presswerk` at
+  `f17620192b69ccffb9454cd49aac8d5ec9454c48` (2026-10-05).
+|===
+
+No Rust tests, build, format, lint, FFP conformance run, browser build, or
+AsciiDoc render has run on the current working tree. `cargo`, `rustc`, `rustfmt`,
+`gawk`, `go`, `asciidoctor`, `just`, `wasm-pack`, and `deno` are not on `PATH`.
+The plan therefore distinguishes source inspection and recorded remote CI
+evidence from checks actually executed in this sandbox. Remote CI results below
+are for `origin/main` at `3fd5ba1`, not this feature branch.
+
+== Binding rules and authority
+
+Use the status of each source, not just its location in the estate:
+
+* **FFP 1.0.0** is active and ratified (2026-10-04). Its MARKER producer
+  obligations are normative. FFP says a producer that wrote any field value
+  MUST set `ffp:filledBy=machine` in an XMP packet in the PDF catalog's
+  `/Metadata`; it MUST preserve, not remove or overwrite, existing XMP. FFP
+  recommends appearance generation, but that recommendation is not the marker
+  obligation.
+* **SEAMS-SPEC 1.0.0** is active and normative. Its seam register belongs in
+  the canonical Trustfile at
+  `.machine_readable/contractiles/trust/Trustfile.a2ml`; it requires a local
+  P2P `test_ref`, and says a Mustfile `seam-check` must run the P2P test until
+  the planned `contractile trust verify` exists.
+* **DocMatrix#71** is the live composition contract and the current owner ruling
+  is controlling: products remain independently useful and own their schemas;
+  Groove handles discovery/compatibility; bootstrap is static typed
+  records/direct invocation; do not introduce another runtime integration
+  engine. ForthWall remains proposed and audit/propose/verify-only.
+* **Blocky Writer's own contractiles remain binding.** `INTENT.contractile`
+  says the WASM boundary is exactly two functions, filling is name-driven, and
+  page geometry is never silently normalized. `MUST.contractile` forbids new
+  TypeScript/Python/Go and NPM dependencies, removal/weakening of tests or CI,
+  loss of `.machine_readable/`, and unapproved unsafe Rust. Preserve these
+  constraints while implementing the plan.
+* **The A2ML/DEED format position is unresolved.** Current standards A2ML
+  `meta`, `state`, and `ecosystem` documentation carries a warning that the old
+  TOML-like characterization is superseded and points to DEED. But
+  `DEED-GRAMMAR-SPEC.adoc` v0.2.2 explicitly says DRAFT and not ratified. Do
+  not present the old TOML-like examples as current conformance grammar, and do
+  not present the draft DEED grammar as ratified. This is a standards-owner
+  decision gate, not permission to infer a universal parser from local files.
+* `0-canon/rsr/RSR-SPEC-v2.adoc` in the standards checkout is explicitly DRAFT.
+  Do not cite it as a ratified requirement. The current RSR template's executable
+  minting/conformance scripts and the open template issue are evidence for the
+  narrowly scoped follow-up below.
+
+== Findings that determine the order
+
+[cols="1,2,3",options="header"]
+|===
+| Area | Verified finding | Consequence
+
+| CI and state
+| https://github.com/hyperpolymath/blocky-writer/pull/74[PR#74] merged
+  `smtp-notify-action` v0.5.0 into `.github/workflows/push-email-notify.yml`;
+  `.github/workflows/actions.lock` still records v0.3.0. The latest observed
+  Rust CI run at `c2b073e` passed,
+  while Governance and Lock Sync Gate failed. Four mirror jobs also failed;
+  their causes are not established.
+| Repair the generated lock first, then refresh the health ledger from
+  owner-triggered/current runs. Do not disable checks or attribute mirror
+  failures without their evidence.
+
+| FFP producer
+| `fill_blocks_impl` writes AcroForm values (`/V`, `/DV`, and/or `/AS`) and sets
+  `/NeedAppearances=true`; it emits no FFP XMP marker. Presswerk has a detector
+  and print-path consumer. Its documented 14/14 conformance result was not
+  independently run in this sandbox.
+| This is Blocky Writer's own producer-conformance work, not an invitation to
+  add a Presswerk runtime integration. Without a marker, the standard's
+  structural detector may only classify the output as suspected.
+
+| FFP appearances
+| Blocky Writer does not generate `/AP` appearance streams; it relies on
+  `/NeedAppearances`. FFP says producers SHOULD generate appearances and says
+  that a producer writing values without `/AP` MUST declare
+  `appearancesGenerated=false` if it emits that property (or may omit it).
+| Mark the current hazard truthfully. Assess appearance generation separately;
+  do not claim that a provenance marker makes the PDF safe to print.
+
+| Seam register
+| Blocky Writer's canonical Trustfile has no `[SEAMS]`; its declarative
+  `contractiles/must/Mustfile.a2ml` has no `seam-check`; no local P2P test was
+  found. The inspected Presswerk Trustfile also has no FFP seam entry.
+| Both sides need a coordinated declaration and runnable P2P evidence. The FFP
+  worked example also conflicts with SEAMS-SPEC on paths, the `fail-degrade` /
+  `external-trust` pairing, and possible circuit-breaker expectations; resolve
+  those before claiming full seam conformance (see WP-1).
+
+| Detection tests
+| At the inspected base `c2b073e`, the six Rust unit tests all exercised
+  fill/error paths; none called `detect_blocks`, although `TEST-NEEDS.adoc`
+  marked block detection as covered. The working diff now adds eleven direct
+  detector tests, bringing the source count to 17; these remain uncompiled and
+  unrun.
+| Correct the coverage record, keep the unverified tests clearly marked, and
+  complete the remaining geometry/identity cases only after their contracts are
+  agreed.
+
+| Geometry
+| At `c2b073e`, `rect_from_object` used `min` and `abs`, normalizing reversed
+  corners, while `detect_blocks_impl` silently skipped some malformed or
+  unresolved annotation/rectangle cases. The working diff rejects reversed,
+  non-finite, and lossy integer coordinates, resolves one-level indirect
+  rectangles, and returns structured errors for malformed annotations and
+  widget rectangles. Coordinates remain `f32` PDF user-space values.
+| The diff removes silent normalization and several silent skips, but remains
+  uncompiled and does not resolve page transforms, identity, Unicode decoding,
+  or the full consumer precision contract. Preserve those as explicit review
+  gates; do not claim complete geometry conformance.
+
+| Field identity
+| `Block` is `{label,x,y,width,height}`. Detection does not return an explicit
+  page, a full hierarchical field name, or a stable widget identity. Text
+  extraction uses lossy UTF-8 and trims NUL/whitespace. The `fill_blocks`
+  `blocks` argument is validated but intentionally unused; filling is
+  name-driven.
+| Treat the JSON in Formatrix Docs#61 as an informational example, not a stable
+  interchange API. Unicode and identity handling are risks to test and contract,
+  not yet proven defects.
+
+| Formatrix/A2ML
+| Formatrix Docs' current README and TUI enum list TXT, MD, ADOC, DJOT, ORG,
+  RST, and TYP; neither lists A2ML. Targeted source search found no A2ML parser.
+  The open #61 body says A2ML is tabbed and suggests this repository's files as
+  a corpus.
+| The premise in #61 is stale against the inspected Formatrix snapshot. Ask the
+  maintainer to confirm intent. The 17 local `.a2ml` and four `.contractile`
+  files are not a canonical positive parser corpus under the unresolved
+  standards position.
+
+| RSR template
+| Blocky Writer's local CONTRIBUTING guide was already rewritten in merged
+  PR#73. RSR-template-repo#200 remains open. Its current mint process performs
+  identity substitutions, but inspected checks do not verify that a generated
+  guide's commands, paths, and repository identity are substantively correct.
+| Keep #200 external and narrowly scoped. Do not re-edit Blocky Writer's guide
+  or patch the template from this repository.
+|===
+
+== Work package 0 — restore evidence-quality CI and health records
+
+=== Goal
+
+Return to a state where the repository's green/red claims, lockfile, and
+stopping-rule ledger describe the exact checked revision. This work is
+independent of the FFP and geometry changes and should be a separate change set.
+
+=== Actions
+
+Remote evidence rechecked on 2026-11-01. `origin/main` is
+`3fd5ba1ed3deee22288d3441b1f3a833246995e2` (#75); this session branch is at
+`c2b073e` (#74). Both tips are shallow/grafted in this checkout, so ancestry is
+not inferred. Main's
+latest push-triggered Rust CI run, `38818494415` (2026-10-15, actor
+`hyperpolymath`), passed formatting, unit tests, and Clippy. That run does not
+include this branch's detector changes.
+
+The same main push (actor `hyperpolymath`) failed Governance run `38818495000`
+at `governance / Actions lockfile verify` and Lock Sync Gate run `38818494312`
+at `Verify lockfile synchronisation`. Main's generated `actions.lock` is now format
+v0.0.3 after #75, but still records `hyperpolymath/smtp-notify-action@v0.3.0`
+while the workflow uses v0.5.0. Mirror run `38818495057` (actor `hyperpolymath`) failed in
+mirror-bitbucket, mirror-gitea, mirror-disroot, and mirror-codeberg; GitLab,
+SourceHut, and Radicle succeeded. Causes remain unknown.
+
+Scheduled CodeQL run `41099036814` (2026-10-30, actor `hyperpolymath`) failed at
+`Set up job` for both analysis jobs; Hypatia run `41255373342` (2026-11-01,
+actor `hyperpolymath`) failed at `Set up job`. Log downloads for these and the
+mirror/lock runs returned EOF, so their causes
+are not established. Secret Scanner run `38818495110` and Pages run
+`38818494311` passed on the same main push, also triggered by `hyperpolymath`.
+These are remote observations, not local test execution. The current branch
+still has no passing CI evidence.
+
+. Regenerate `.github/workflows/actions.lock` with the prescribed
+  `gh actions-lock` tooling after the #74 action bump. Do not hand-edit the
+  generated file and do not invent a resolved SHA. The extension command is not
+  installed here (`gh actions-lock` is unknown; installing the extension failed
+  while downloading its release asset), and `gawk`/`go` are absent. Leave the
+  generated file unchanged until the supported generator is available; then
+  verify with `scripts/check-lock-sync.sh` and keep YAML plus lock metadata in
+  the same change.
+. Have an allowed owner/actor run repository checks after lock regeneration.
+  Inspect the run-page annotation as well as REST/run summaries: a lockfile
+  refusal and an org policy refusing bot-triggered Actions are distinct. A run
+  with zero jobs is not evidence that Rust tests passed or failed.
+. Refresh `docs/ci/CHECK-DETERMINATIONS.adoc` from exact current evidence. The
+  Rust core row predates passing main run `38818494415` at `3fd5ba1`; the Lock
+  Sync Gate row incorrectly says “Fixed” despite the post-#74 drift. Record the
+  new IDs, actor, step results, and unresolved scheduled/mirror failures without
+  claiming that this branch was tested.
+. Triage mirror failures separately. Run `38818495057` failed in
+  mirror-bitbucket, mirror-gitea, mirror-disroot, and mirror-codeberg; GitLab,
+  SourceHut, and Radicle passed. Record those outcomes, but do not guess whether
+  failures are credential, network, remote-policy, or code failures. Do not
+  weaken or delete mirror checks.
+. Reconcile human-readable repository claims against the checked tree and runs:
+  `README.adoc`, `docs/ecosystem/ECOSYSTEM.adoc`, `TEST-NEEDS.adoc`,
+  `TOPOLOGY.adoc`, `EXPLAINME.adoc`, `rust/pdftool_core/README.adoc`, and
+  `docs/ci/CHECK-DETERMINATIONS.adoc`. Keep the product boundary explicit and
+  preserve `REQUIRES_INITIALISATION.adoc`'s resolved-template status. Do not
+  rewrite `.machine_readable/6a2/STATE.a2ml` or contractiles to settle the
+  unresolved A2ML/DEED syntax; label that status snapshot stale instead. Review
+  the old `quality.yml` enforcement references, but do not make an unapproved
+  contract change.
+. **State-format stop condition:** before extending
+  `.machine_readable/6a2/STATE.a2ml`, get an explicit standards-owner ruling on
+  the A2ML/DEED status conflict above. Until then, make human-readable
+  AsciiDoc health/CI records accurate and clearly mark the machine-readable
+  status file as stale; do not silently declare its legacy TOML-like syntax
+  standards-conforming or convert it to an unratified draft grammar.
+
+=== Acceptance
+
+* `scripts/check-lock-sync.sh` passes against the tracked workflow YAML and
+  generated lockfile.
+* A current, owner-triggered CI run reports the exact Rust, Governance, and
+  Lock Sync outcomes; no run is described as green solely from a bot
+  `startup_failure`.
+* `CHECK-DETERMINATIONS.adoc` contains a dated determination for every currently
+  red-on-main check, with evidence and no muted/deleted failure.
+* Health documentation does not claim detection tests that do not exist or
+  report stale run IDs as current.
+* Mirror failure causes remain explicitly unknown until independently
+  evidenced.
+
+== Work package 1 — FFP producer and declared seam
+
+=== Goal
+
+Make Blocky Writer's filled output honestly declare machine-written field
+values under ratified FFP 1.0, preserve existing metadata, and provide a
+runnable producer-to-Presswerk seam test without adding runtime coupling.
+
+=== 1A. Producer behavior
+
+Implement within the existing `fill_blocks` path; do not add a WASM export or a
+new runtime service.
+
+* Track actual successful field writes. Add the FFP marker only after the fill
+  operation has successfully written at least one value. The marker belongs in
+  an XMP packet carried by the catalog `/Metadata` stream, never `/Info`.
+* Use the FFP 1.0 namespace URI exactly and set `ffp:filledBy=machine`. The
+  optional `ffp:tool` SHOULD identify `blocky-writer`. Omit `filledAt` and
+  `toolVersion` in the first pass: neither is required, the former is
+  privacy-bearing, and Presswerk's release-preparation note recommends consent
+  before emitting `toolVersion`/`filledAt`.
+* The current writer does not generate `/AP`. If it emits
+  `ffp:appearancesGenerated`, it must be `false`; do not declare `true` based
+  only on `/NeedAppearances` or pre-existing streams. Keep the blank-print
+  hazard visible to Presswerk.
+* Preserve all existing XMP content. Add/merge the FFP description without
+  replacing unrelated RDF, namespaces, or packet data. If an existing packet is
+  malformed or cannot be safely merged, fail with a structured `BW_*` error
+  rather than silently replacing it. If a pre-existing FFP declaration
+  conflicts with the new producer metadata, get a standards-owner resolution
+  before choosing overwrite/duplicate semantics.
+* Define no-op behavior explicitly. `fill_blocks_impl` currently sets
+  `/NeedAppearances=true` before it knows whether any supplied field matches;
+  an empty fields map can therefore serialize a mutated document with zero
+  field writes. Tests must establish whether this is retained or corrected, and
+  prove that no new FFP marker is asserted when no field value was written.
+
+=== 1B. Producer-side tests
+
+Add narrow tests for the marker and metadata semantics, including:
+
+[cols="2,3",options="header"]
+|===
+| Input case | Required assertion
+
+| Successful text/select write
+| Catalog `/Metadata` contains FFP namespace + `filledBy=machine`; no new
+  `/Info` claim.
+
+| Successful button write
+| The same marker condition holds for `/V`/`/AS`-based writeback.
+
+| Existing non-FFP XMP packet
+| Existing packet content survives and FFP is added; it is not replaced.
+
+| No matching/empty values or fill error
+| No false machine-filled declaration is added; error paths do not return a
+  partially serialized output.
+
+| Existing malformed or conflicting FFP metadata
+| No silent metadata loss. The approved policy is exercised and the failure is
+  structured if safe merge is impossible.
+
+| Appearance declaration
+| If present while Blocky Writer still relies on `NeedAppearances`, the value is
+  `false`; tests do not imply that `/AP` was generated.
+|===
+
+Also run the standards FFP detector conformance vectors where available, but
+label them correctly: the existing shared 14-vector runner verifies a
+*detector's classification semantics*. It does not by itself prove that
+Blocky Writer writes a conforming marker or that its actual output crosses the
+Presswerk seam.
+
+=== 1C. Seam declaration and P2P gate
+
+The seam ID is `blocky-writer-presswerk-form-handoff`. The FFP PRINT-PATH
+worked example supplies the intended direction, `fail-degrade` behavior, and
+`external-trust` tier. Both product repositories need their own declaration in
+the canonical Trustfile; the inspected Blocky Writer and Presswerk Trustfiles
+currently lack the entry.
+
+There are standards-example mismatches that must be resolved rather than copied
+blindly:
+
+* SEAMS-SPEC requires `contract` to be a path relative to the repository root
+  and `test_ref` to name a local, runnable P2P test.
+* FFP PRINT-PATH's worked example points both fields at paths in the separate
+  `standards` checkout; its conformance runner exercises detector vectors and
+  is not a test of a Blocky Writer-produced PDF passing through Presswerk.
+* FFP's example pairs `failure_mode: fail-degrade` with `tier: external-trust`,
+  while SEAMS-SPEC §7 says `fail-degrade` seams require `elixir-disciplined`
+  tier or higher. The intended tier ordering/exception for this handoff is not
+  established by the inspected texts.
+* SEAMS-SPEC also says `external-trust` seams must be isolated by a circuit
+  breaker. The FFP handoff is a PDF/file handoff, not an identified network
+  service; requiring a new runtime circuit breaker may conflict with DocMatrix#71
+  and is not justified by current evidence.
+
+Ask the standards owner to clarify how a child repository pins an external FFP
+contract under SEAMS-SPEC, whether the FFP example's test reference is intended
+as the local P2P test, how its tier/failure-mode pair is reconciled with SEAMS-SPEC
+§7, and whether the circuit-breaker clause applies to this file handoff. Do not
+duplicate or silently fork the standard. Do not build a runtime circuit breaker
+to paper over the ambiguity. Subject to an owner-approved interpretation,
+create an in-repository P2P test that:
+
+. produces a deterministic filled AcroForm fixture using Blocky Writer;
+. passes that output to Presswerk's detector/print-path classifier (for example,
+   via a test-only `FFP_DETECTOR` interface); and
+. asserts declared machine-filled provenance and preserves any incomplete
+   appearance hazard.
+
+The test is test-only. It must not add Presswerk as a runtime dependency, make
+Presswerk mandatory to use Blocky Writer, or create another integration engine.
+Coordinate the matching declaration/test in Presswerk through its maintainers;
+this plan does not modify that repository.
+
+The Blocky Writer seam record must include the fields required by SEAMS-SPEC:
+`id`, `description`, `from`, `to`, `contract`, `test_ref`, `failure_mode`,
+`tier`, and `notes`. Resolve the contract/test path discrepancy first; then wire
+the P2P test into the current Mustfile/CI mechanism. The inspected
+`contractiles/must/Mustfile.a2ml` contains only license/readme/banned-path checks,
+not `seam-check`, and the inspected `.machine_readable/MUST.contractile`
+references `quality.yml`. Confirm the active runner mapping before asserting
+that CI already enforces SEAMS-SPEC. Until a real seam gate runs, record the
+deferral honestly rather than claiming conformance.
+
+=== Acceptance
+
+* A non-empty successful fill carries the correct FFP declaration in catalog
+  XMP and retains pre-existing XMP.
+* No FFP declaration is added to an output on which Blocky Writer wrote no
+  field value.
+* Existing FFP conformance-vector results are not represented as proof of the
+  producer or the end-to-end seam.
+* Both sides declare the seam under their own canonical Trustfiles, and a local
+  runnable P2P test is named by `test_ref` and is invoked by the approved
+  Mustfile/CI `seam-check` mechanism.
+* The chosen `failure_mode`/`tier` pair and the circuit-breaker applicability
+  are explicitly reconciled with both FFP PRINT-PATH and SEAMS-SPEC; the worked
+  example is not copied without resolving their differing prescriptions.
+* A no-AP output remains truthfully flagged; marker presence never hides
+  Presswerk's FFP-E-AP-INCOMPLETE hazard.
+
+== Work package 2 — detection tests, geometry, and field identity
+
+=== Goal
+
+Make detection behavior observable and contractual before changing geometry or
+field identity. Preserve the two-function WASM boundary and the documented
+name-driven fill semantics.
+
+=== 2A. Test the current detector directly
+
+The current working diff adds eleven direct `detect_blocks_impl` tests using a
+synthetic PDF: valid user-space widgets and labels, a valid non-widget
+annotation, empty/malformed/unresolved page `/Annots`, direct and indirect
+`/Rect`, malformed and reversed rectangles, precision-losing integer values,
+and unresolved/non-dictionary annotations. Together with the six original
+fill/error tests there are 17 test functions in source. None has run yet.
+
+Before treating this coverage as accepted, run it and add or explicitly defer the
+remaining cases:
+
+* multiple pages, annotation ordering, duplicate partial labels, nested field
+  parents, full versus partial names, multiple widgets per field, and fallback
+  labels;
+* non-zero/negative page boxes, page rotation and inherited page geometry;
+* non-finite numeric inputs where the PDF parser permits constructing them; and
+* PDFDocEncoding and UTF-16BE/BOM text, non-ASCII labels, significant leading/
+  trailing spaces, and embedded NUL handling.
+
+The existing tests assert faithful results or structured refusals. Do not bake
+in `min`/`abs`, lossy decoding, trim, or skip behavior merely because that is
+what the implementation used to do. Keep coordinate transforms, field identity,
+and text decoding unchanged until their contracts are reviewed.
+
+=== 2B. Resolve the contract before changing behavior
+
+The current composition contract says no component silently normalizes page
+geometry. The working diff removes `min`/`abs` normalization and returns a
+structured error for reversed or unrepresentable widget rectangles. This is a
+provisional refusal policy, not a claim that the complete PDF rectangle and
+coordinate contract has been approved. Review it against the PDF contract and
+consumer needs before merging.
+
+Before finalizing the behavior, agree on:
+
+. the accepted PDF rectangle invariant and whether malformed geometry yields a
+  structured error, an explicit unsupported record, or a documented refusal;
+. the coordinate reference frame and units (the current values are raw PDF user
+  space, not transformed screen coordinates);
+. page identity and ordering, including rotations/page boxes and whether
+  coordinates are returned as authored or transformed;
+. numeric representation/rounding and acceptable precision; and
+. text decoding/normalization rules for PDF field names and display labels.
+
+Do not expose a best-effort number as exact geometry. If the existing `f32`
+shape cannot satisfy the selected precision contract, version the response
+shape deliberately before consumers rely on it; do not add a third WASM export.
+
+=== 2C. Separate display label from field identity
+
+`Block.label` is currently selected from the widget's `/T`, then a parent `/T`,
+then a page/annotation fallback. It is not the full AcroForm hierarchy and is
+not guaranteed unique. `object_to_text` uses `String::from_utf8_lossy` and trims
+NUL/whitespace, so it can conflate identity-bearing strings. Treat this as a
+fidelity risk pending PDF-string contract review.
+
+If a real consumer needs stable placement identity, define it with that
+consumer and DocMatrix#71 first. Candidate dimensions to evaluate are full
+field path, page number, and widget occurrence; PDF object numbers are not
+stable across rewrites and should not be advertised as stable IDs. Keep a raw
+identity representation distinct from any human-friendly label. Do not claim
+the current `{label,x,y,width,height}` object is sufficient to locate a value
+across pages or a versioned exchange format.
+
+`fill_blocks` is intentionally keyed by field name; its `blocks` parameter is
+validated but unused. Do not make the operation coordinate-driven or use the
+Formatrix #61 example as an established input contract. Keep exactly the
+existing `detect_blocks` and `fill_blocks` exports unless an owner-approved,
+versioned contract explicitly changes that surface.
+
+=== 2D. Documentation and coverage ledger
+
+After tests land, correct `TEST-NEEDS.adoc` so its coverage table says detection
+was previously untested and now names the actual detection cases. Update the
+relevant `rust/pdftool_core/README.adoc`, `TOPOLOGY.adoc`, and
+`EXPLAINME.adoc` claims only to the level verified by tests. Keep test counts,
+CI run IDs, and the exact contract shape synchronized; do not claim OCR,
+visual-block, ruled-line, baseline, or per-character-cell detection.
+
+=== Acceptance
+
+* Each detection behavior is asserted in a direct Rust test; malformed geometry
+  and annotations cannot disappear silently without an explicit contract.
+* Valid page coordinates are preserved under the agreed coordinate contract;
+  no unannounced `min`/`abs`, lossy cast, coordinate transform, or text rewrite
+  is introduced.
+* The output either carries an explicitly versioned identity/coordinate shape
+  accepted by its consumer, or remains documented as a widget listing that is
+  not an interchange API.
+* WASM still has exactly two exports; fill remains name-driven; no existing
+  public `BW_*` code is renamed or repurposed, and every new code is covered.
+* The four-code API expansion receives the compatibility/version review required
+  by repository guidance before merge.
+* `TEST-NEEDS.adoc` and other status docs reflect only tests that actually run.
+
+== Work package 3 — Formatrix Docs#61 and the A2ML question
+
+=== Disposition
+
+#61 is informational and open with no comments. Its boundary statement is
+consistent with Blocky Writer#73 and DocMatrix#71; it does not request or block
+an integration. The A2ML-support claim in its body is not corroborated by the
+inspected Formatrix main snapshot: README and TUI enumerate seven other formats,
+and targeted source searches found no A2ML parser.
+
+The local corpus is 17 `.a2ml` files and four `.contractile` files. It is
+structurally varied as repository material, but not a standards-conformance
+suite. At least the local `STATE.a2ml` is in the old TOML-like key/value shape
+that the current standards documentation warns against implementing as the
+family's current grammar; the standards warning reports only 0.2% conformance
+for the measured legacy TOML-shaped corpus. Since the pointed-to DEED grammar is
+explicitly DRAFT/unratified, neither parser target should be silently assumed.
+
+=== Follow-up sequence
+
+. Ask Formatrix Docs maintainers whether A2ML support is still planned and, if
+  so, whether they mean opaque pass-through/display or parsing/editing.
+. Ask the standards owner to reconcile the supersession warning with the
+  unratified DEED grammar and identify the intended conformance source/version.
+. Only after those answers, decide whether any local files are useful as
+  *legacy-compatibility* fixtures. Classify each fixture by dialect/status;
+  do not call the whole corpus canonical positive conformance data.
+. If a real Formatrix consumer requests Blocky Writer placement data, bring the
+  request to DocMatrix#71's versioned-interchange owner. Require an explicit
+  versioned contract for format identity, parser/renderer versions, native-input
+  authority, content-addressed/inspectable intermediates, exact input/output
+  hashes, evidence spans/page coordinates, provenance, loss/refusal semantics,
+  and replayable operation records. No silent normalization; ambiguous or lossy
+  transformations require approval. Require positive, negative, ambiguous,
+  stale-input, lossy, round-trip, and fault-injection fixtures before a producer
+  schema is committed.
+
+No parser, converter, viewer, editor, shared serializer, or runtime integration
+is planned here. Do not close #61 on behalf of Formatrix Docs.
+
+=== Suggested non-blocking response for #61
+
+[source,text]
+----
+Thanks — the boundary still stands: Formatrix Docs owns viewing/editing, while
+Blocky Writer owns fixed-layout form placement. We are not proposing a code-level
+integration. One update: the Formatrix README/TUI at the current main snapshot
+list TXT, MD, ADOC, DJOT, ORG, RST, and TYP, not A2ML, and we did not find an
+A2ML parser there. Can you confirm whether A2ML is still planned and whether a
+real consumer needs placement data? Our current detect_blocks object is not a
+stable interchange contract: it has no explicit page or stable full-field
+identity. Any future exchange would need DocMatrix#71 owner approval and a
+versioned contract.
+----
+
+This is a proposed communication only; do not post it without maintainer
+approval.
+
+== Work package 4 — RSR-template-repo#200 follow-up
+
+Blocky Writer already rewrote its local `.github/CONTRIBUTING.md` in merged
+PR#73. Do not reapply that fix. #200 is still an external template issue; the
+current template's `repo-init` performs identity substitution and its mint
+checks cover placeholders/instruction blocks and repository structure, but the
+inspected tests do not validate that the generated contributor guide's actual
+clone target, commands, and documented paths fit the minted child.
+
+The only planned follow-up is to offer the template maintainers a narrow
+regression-test suggestion: mint a child fixture and assert that the resulting
+guide points at the child repository, names paths and commands that exist, and
+contains no unrelated template-project identity. Keep it external; do not edit
+`rsr-template-repo` or broaden Blocky Writer's template obligations here. Do
+not use draft `RSR-SPEC-v2` as if it were ratified.
+
+== Work package 5 — appearance generation follow-on
+
+FFP 1.0 recommends that the producer generate normal `/AP` streams because
+viewers/rasterizers can ignore `/NeedAppearances`; Presswerk records and surfaces
+the incomplete-appearance hazard and MUST NOT repair the PDF silently. The
+minimal producer-marker work must not be mistaken for a rendering fix.
+
+After FFP marker behavior and tests are stable, open a separate, scoped
+correctness decision for generating appearances for the currently supported
+`Tx`, `Ch`, and `Btn` fields. Establish supported fonts, resources, widget
+states, preservation of pre-existing `/AP`, errors for unsupported appearances,
+and a real-viewer/print-rasterizer verification matrix first. Do not fold that
+work into the XMP marker change, do not claim PDF/A suitability, and do not
+remove the hazard declaration until generated appearances are verified.
+
+== Cross-repository references and ownership
+
+[cols="1,2,3",options="header"]
+|===
+| Reference | Status / ownership | Use in this plan
+
+| https://github.com/hyperpolymath/formatrix-docs/issues/61[Formatrix Docs#61]
+| Open, informational; current A2ML-support premise needs maintainer
+  confirmation.
+| Boundary note and A2ML follow-up only; no integration ticket is implied.
+
+| https://github.com/hyperpolymath/blocky-writer/pull/73[Blocky Writer#73]
+| Merged 2026-09-27.
+| Boundary docs and local CONTRIBUTING correction already landed; not a
+  consumer integration or geometry contract.
+
+| https://github.com/hyperpolymath/docmatrix/issues/71[DocMatrix#71]
+| Open architecture/composition contract with owner clarification against a
+  new runtime integration engine.
+| Governs any future versioned interop, geometry fidelity, provenance, loss
+  reporting, replay, and independent verification.
+
+| https://github.com/hyperpolymath/presswerk/issues/118[Presswerk#118] and
+  https://github.com/hyperpolymath/standards/tree/3108c1b01186741eea80c00da3f4beda912286f9/1-formats/sub-specs/form-fill-provenance[FFP]
+| #118 is closed after ruling D189; FFP 1.0.0 is active/ratified. Presswerk is
+  the consumer; Blocky Writer owes the producer marker.
+| Do not re-ask D189. Implement producer behavior locally and coordinate the
+  explicit test/register across owners.
+
+| https://github.com/hyperpolymath/rsr-template-repo/issues/200[RSR template#200]
+| Open and owned by the template maintainers.
+| External mint-test follow-up only; child repo already has its correction.
+|===
+
+== Merge sequencing and stop conditions
+
+[arabic]
+. **First:** repair the Actions lock and re-establish trustworthy health
+   records. Do not stack feature work on an unexplained workflow-file failure.
+. **Second:** get the standards owner answer for the seam contract/test path and
+   the A2ML/DEED status conflict. FFP marker implementation can be developed
+   independently, but do not declare the seam conformant until its P2P gate and
+   both Trustfile entries are real.
+. **Third:** add detector tests and agree the geometry/identity contract before
+   changing normalization, page semantics, or label decoding.
+. **Fourth:** carry out only the local producer and detector changes approved by
+   those gates, each in a scoped change set with tests and updated status docs.
+. **Finally:** send the optional #61 and #200 follow-ups to their owners; do not
+   edit or close issues in those repositories as part of this plan.
+
+Stop and ask the relevant owner if any proposal requires a new runtime engine,
+a new mandatory hub/serializer, a third WASM export, silent geometry repair,
+lossy field-name normalization, a parser for an unspecified A2ML dialect,
+weakening a CI gate, or changing another repository. Those outcomes are not
+accepted by this plan.
+
+== Source index
+
+* Blocky Writer implementation/tests: `rust/pdftool_core/src/lib.rs`;
+  `rust/pdftool_core/README.adoc`; `TEST-NEEDS.adoc`; `TOPOLOGY.adoc`;
+  `EXPLAINME.adoc`; `docs/ci/CHECK-DETERMINATIONS.adoc`;
+  `.machine_readable/6a2/STATE.a2ml`; `.machine_readable/MUST.contractile`;
+  `.machine_readable/contractiles/trust/Trustfile.a2ml`;
+  `contractiles/must/Mustfile.a2ml`;
+  `.github/workflows/push-email-notify.yml` and
+  `.github/workflows/actions.lock`.
+* Active seam rules:
+  https://github.com/hyperpolymath/standards/blob/3108c1b01186741eea80c00da3f4beda912286f9/docs/SEAMS-SPEC.adoc[SEAMS-SPEC].
+* FFP producer marker, print path, and vectors:
+  https://github.com/hyperpolymath/standards/tree/3108c1b01186741eea80c00da3f4beda912286f9/1-formats/sub-specs/form-fill-provenance[FFP 1.0.0].
+* A2ML/DEED status evidence:
+  https://github.com/hyperpolymath/standards/blob/3108c1b01186741eea80c00da3f4beda912286f9/1-formats/a2ml/state/README.adoc[STATE supersession warning],
+  https://github.com/hyperpolymath/standards/blob/3108c1b01186741eea80c00da3f4beda912286f9/1-formats/a2ml/meta/README.adoc[META supersession warning], and
+  https://github.com/hyperpolymath/standards/blob/3108c1b01186741eea80c00da3f4beda912286f9/1-formats/deed/spec/DEED-GRAMMAR-SPEC.adoc[DEED draft status].
+* Formatrix snapshot evidence:
+  https://github.com/hyperpolymath/formatrix-docs/blob/85e6692aaa544c0b2b7b41f156c11f3de25d95fc/README.adoc[supported formats] and
+  https://github.com/hyperpolymath/formatrix-docs/blob/85e6692aaa544c0b2b7b41f156c11f3de25d95fc/tui/src/formatrix_tui-app.ads[TUI format enum].
+* Presswerk snapshot evidence:
+  https://github.com/hyperpolymath/presswerk/blob/f17620192b69ccffb9454cd49aac8d5ec9454c48/docs/APP_STORE_PREP.md[FFP report and privacy note],
+  https://github.com/hyperpolymath/presswerk/blob/f17620192b69ccffb9454cd49aac8d5ec9454c48/crates/presswerk-document/src/provenance.rs[detector implementation], and
+  https://github.com/hyperpolymath/presswerk/blob/f17620192b69ccffb9454cd49aac8d5ec9454c48/.machine_readable/contractiles/trust/Trustfile.a2ml[Trustfile inspected for seam registration].
+* Current main run pages (rechecked 2026-11-01):
+  https://github.com/hyperpolymath/blocky-writer/actions/runs/38818494415[Rust CI],
+  https://github.com/hyperpolymath/blocky-writer/actions/runs/38818495000[Governance],
+  https://github.com/hyperpolymath/blocky-writer/actions/runs/38818494312[Lock Sync Gate],
+  https://github.com/hyperpolymath/blocky-writer/actions/runs/38818495057[Mirror],
+  https://github.com/hyperpolymath/blocky-writer/actions/runs/41099036814[scheduled CodeQL], and
+  https://github.com/hyperpolymath/blocky-writer/actions/runs/41255373342[scheduled Hypatia].
+* Current template mint/conformance evidence:
+  https://github.com/hyperpolymath/rsr-template-repo/tree/df09a6c50c4c77e93abac0fdf162509bf5648611/build/just[repo-init],
+  https://github.com/hyperpolymath/rsr-template-repo/tree/df09a6c50c4c77e93abac0fdf162509bf5648611/tests/e2e[template E2E], and
+  https://github.com/hyperpolymath/rsr-template-repo/tree/df09a6c50c4c77e93abac0fdf162509bf5648611/scripts[conformance checks].

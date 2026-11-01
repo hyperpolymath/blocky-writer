@@ -87,5 +87,8 @@ with a stable machine code, a human message, and optional context:
 { "code": "BW_FILL_NO_MATCHING_FIELDS", "message": "…", "context": "Choice" }
 ```
 
-There are 20 `BW_*` codes. Codes are stable API — treat adding or renaming one
-as a breaking change, not a tidy-up.
+There are 24 unique `BW_*` codes in the current source (20 baseline codes plus
+four detector-validation codes). Error codes are external API; repository
+guidance treats additions and renames as breaking changes, so this expansion
+needs compatibility/version review before merge. The four additions also remain
+unverified until the current Rust diff passes formatting, tests, and Clippy.

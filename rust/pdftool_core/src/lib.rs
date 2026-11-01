@@ -55,8 +55,14 @@ fn resolve_object(doc: &Document, obj: &Object) -> Result<Object, lopdf::Error> 
 
 fn object_to_number(obj: &Object) -> Option<f32> {
     match obj {
-        Object::Integer(v) => Some(*v as f32),
-        Object::Real(v) => Some(*v),
+        Object::Integer(value) => {
+            let converted = *value as f32;
+            // Converting back through i128 avoids saturation at the i64 bounds
+            // and lets us refuse values that `f32` would silently change at the
+            // Block/WASM boundary.
+            ((converted as i128) == (*value as i128)).then_some(converted)
+        }
+        Object::Real(value) => value.is_finite().then_some(*value),
         _ => None,
     }
 }
@@ -75,11 +81,20 @@ fn rect_from_object(obj: &Object) -> Option<(f32, f32, f32, f32)> {
     let urx = object_to_number(&values[2])?;
     let ury = object_to_number(&values[3])?;
 
-    let x = llx.min(urx);
-    let y = lly.min(ury);
-    let width = (urx - llx).abs();
-    let height = (ury - lly).abs();
-    Some((x, y, width, height))
+    // PDF Rect is ordered as lower-left then upper-right. Do not normalize a
+    // malformed/reversed rectangle: that changes page geometry without the
+    // caller's knowledge.
+    if llx > urx || lly > ury {
+        return None;
+    }
+
+    let width = urx - llx;
+    let height = ury - lly;
+    if !width.is_finite() || !height.is_finite() {
+        return None;
+    }
+
+    Some((llx, lly, width, height))
 }
 
 fn object_to_text(obj: &Object) -> Option<String> {
@@ -613,19 +628,41 @@ fn detect_blocks_impl(pdf_data: &[u8]) -> CoreResult<Vec<Block>> {
             Err(_) => continue,
         };
 
-        let annots = match resolve_object(&doc, annots_obj) {
-            Ok(Object::Array(arr)) => arr,
-            Ok(_) | Err(_) => continue,
+        let annots = resolve_object(&doc, annots_obj).map_err(|err| {
+            core_error_with_context(
+                "BW_PDF_ANNOTATIONS_INVALID",
+                format!("could not resolve page Annots array: {err}"),
+                Some(format!("page {}", page_number)),
+            )
+        })?;
+        let annots = match annots {
+            Object::Array(arr) => arr,
+            _ => {
+                return Err(core_error_with_context(
+                    "BW_PDF_ANNOTATIONS_INVALID",
+                    "page Annots entry is not an array",
+                    Some(format!("page {}", page_number)),
+                ));
+            }
         };
 
         for (annot_index, annot_ref) in annots.iter().enumerate() {
-            let annot_obj = match resolve_object(&doc, annot_ref) {
-                Ok(obj) => obj,
-                Err(_) => continue,
-            };
+            let annot_obj = resolve_object(&doc, annot_ref).map_err(|err| {
+                core_error_with_context(
+                    "BW_PDF_ANNOTATION_UNRESOLVED",
+                    format!("could not resolve page annotation: {err}"),
+                    Some(format!("page {} annotation {}", page_number, annot_index + 1)),
+                )
+            })?;
             let widget = match annot_obj {
                 Object::Dictionary(dict) => dict,
-                _ => continue,
+                _ => {
+                    return Err(core_error_with_context(
+                        "BW_PDF_ANNOTATION_INVALID",
+                        "page annotation is not a dictionary",
+                        Some(format!("page {} annotation {}", page_number, annot_index + 1)),
+                    ));
+                }
             };
 
             let is_widget = is_widget_dict(&widget);
@@ -633,10 +670,27 @@ fn detect_blocks_impl(pdf_data: &[u8]) -> CoreResult<Vec<Block>> {
                 continue;
             }
 
-            let rect = match widget.get(b"Rect").ok().and_then(rect_from_object) {
-                Some(rect) => rect,
-                None => continue,
-            };
+            let rect_obj = widget.get(b"Rect").map_err(|err| {
+                core_error_with_context(
+                    "BW_PDF_WIDGET_RECT_INVALID",
+                    format!("widget Rect is missing: {err}"),
+                    Some(format!("page {} annotation {}", page_number, annot_index + 1)),
+                )
+            })?;
+            let rect_obj = resolve_object(&doc, rect_obj).map_err(|err| {
+                core_error_with_context(
+                    "BW_PDF_WIDGET_RECT_INVALID",
+                    format!("could not resolve widget Rect: {err}"),
+                    Some(format!("page {} annotation {}", page_number, annot_index + 1)),
+                )
+            })?;
+            let rect = rect_from_object(&rect_obj).ok_or_else(|| {
+                core_error_with_context(
+                    "BW_PDF_WIDGET_RECT_INVALID",
+                    "widget Rect must contain four ordered, finite, representable numbers",
+                    Some(format!("page {} annotation {}", page_number, annot_index + 1)),
+                )
+            })?;
 
             let fallback = format!("field_{}_{}", page_number, annot_index + 1);
             let label = widget_label(&doc, &widget, fallback);
@@ -794,13 +848,98 @@ mod tests {
         Object::Array(vec![llx.into(), lly.into(), urx.into(), ury.into()])
     }
 
-    fn assert_error_code(result: CoreResult<Vec<u8>>, expected_code: &str) {
-        let payload = result.expect_err("expected fill_blocks to fail");
+    fn assert_error_code<T: std::fmt::Debug>(result: CoreResult<T>, expected_code: &str) {
+        let payload = result.expect_err("expected operation to fail");
         assert_eq!(payload.code, expected_code);
         assert!(
             !payload.message.is_empty(),
             "error message should not be empty"
         );
+    }
+
+    fn save_fixture_doc(doc: &mut Document) -> Vec<u8> {
+        let mut bytes = Vec::new();
+        doc.save_to(&mut bytes).expect("serialize fixture PDF");
+        bytes
+    }
+
+    fn fixture_with_first_widget_rect(pdf_data: &[u8], rect: Object) -> Vec<u8> {
+        let mut doc = Document::load_mem(pdf_data).expect("load fixture PDF");
+        let page_id = *doc
+            .get_pages()
+            .values()
+            .next()
+            .expect("fixture has one page");
+        let widget_id = {
+            let page = doc
+                .get_object(page_id)
+                .expect("fixture page exists")
+                .as_dict()
+                .expect("fixture page is a dictionary");
+            let annots = page
+                .get(b"Annots")
+                .expect("fixture page has Annots")
+                .as_array()
+                .expect("fixture Annots is an array");
+            match annots.first().expect("fixture has a widget annotation") {
+                Object::Reference(id) => *id,
+                _ => panic!("fixture widget must be indirect"),
+            }
+        };
+        doc.get_object_mut(widget_id)
+            .expect("fixture widget exists")
+            .as_dict_mut()
+            .expect("fixture widget is a dictionary")
+            .set(b"Rect", rect);
+        save_fixture_doc(&mut doc)
+    }
+
+    fn fixture_with_first_widget_indirect_rect(pdf_data: &[u8], rect: Object) -> Vec<u8> {
+        let mut doc = Document::load_mem(pdf_data).expect("load fixture PDF");
+        let page_id = *doc
+            .get_pages()
+            .values()
+            .next()
+            .expect("fixture has one page");
+        let widget_id = {
+            let page = doc
+                .get_object(page_id)
+                .expect("fixture page exists")
+                .as_dict()
+                .expect("fixture page is a dictionary");
+            let annots = page
+                .get(b"Annots")
+                .expect("fixture page has Annots")
+                .as_array()
+                .expect("fixture Annots is an array");
+            match annots.first().expect("fixture has a widget annotation") {
+                Object::Reference(id) => *id,
+                _ => panic!("fixture widget must be indirect"),
+            }
+        };
+        let rect_id = doc.new_object_id();
+        doc.objects.insert(rect_id, rect);
+        doc.get_object_mut(widget_id)
+            .expect("fixture widget exists")
+            .as_dict_mut()
+            .expect("fixture widget is a dictionary")
+            .set(b"Rect", Object::Reference(rect_id));
+        save_fixture_doc(&mut doc)
+    }
+
+    fn fixture_with_page_annots(pdf_data: &[u8], annots: Object) -> Vec<u8> {
+        let mut doc = Document::load_mem(pdf_data).expect("load fixture PDF");
+        let page_id = *doc
+            .get_pages()
+            .values()
+            .next()
+            .expect("fixture has one page");
+        doc.get_object_mut(page_id)
+            .expect("fixture page exists")
+            .as_dict_mut()
+            .expect("fixture page is a dictionary")
+            .set(b"Annots", annots);
+        save_fixture_doc(&mut doc)
     }
 
     fn make_fixture_pdf() -> Vec<u8> {
@@ -942,6 +1081,119 @@ mod tests {
         let mut bytes = Vec::new();
         doc.save_to(&mut bytes).expect("serialize fixture pdf");
         bytes
+    }
+
+    #[test]
+    fn detect_blocks_returns_widget_rectangles_in_pdf_user_space() {
+        let pdf = make_fixture_pdf();
+        let blocks = detect_blocks_impl(&pdf).expect("valid widget rectangles should detect");
+
+        assert_eq!(blocks.len(), 4);
+        assert_eq!(blocks[0].label, "Name");
+        assert_eq!((blocks[0].x, blocks[0].y), (50.0, 700.0));
+        assert_eq!((blocks[0].width, blocks[0].height), (200.0, 24.0));
+        assert_eq!(blocks[1].label, "Consent");
+        assert_eq!(blocks[2].label, "Choice");
+        assert_eq!(blocks[3].label, "Choice");
+        assert_eq!((blocks[3].x, blocks[3].y), (120.0, 600.0));
+    }
+
+    #[test]
+    fn detect_blocks_resolves_indirect_widget_rectangles() {
+        let pdf = fixture_with_first_widget_indirect_rect(
+            &make_fixture_pdf(),
+            rect(50, 700, 250, 724),
+        );
+        let blocks = detect_blocks_impl(&pdf).expect("indirect Rect arrays should resolve");
+        assert_eq!((blocks[0].x, blocks[0].y), (50.0, 700.0));
+        assert_eq!((blocks[0].width, blocks[0].height), (200.0, 24.0));
+    }
+
+    #[test]
+    fn detect_blocks_returns_empty_for_page_without_annotations() {
+        let pdf = fixture_with_page_annots(&make_fixture_pdf(), Object::Array(Vec::new()));
+        let blocks = detect_blocks_impl(&pdf).expect("empty Annots array is valid");
+        assert!(blocks.is_empty());
+    }
+
+    #[test]
+    fn detect_blocks_rejects_non_array_page_annots() {
+        let pdf = fixture_with_page_annots(&make_fixture_pdf(), name("not-an-array"));
+        assert_error_code(detect_blocks_impl(&pdf), "BW_PDF_ANNOTATIONS_INVALID");
+    }
+
+    #[test]
+    fn detect_blocks_reports_unresolved_page_annots_reference() {
+        let missing_id = (u32::MAX, u16::MAX);
+        let pdf = fixture_with_page_annots(
+            &make_fixture_pdf(),
+            Object::Reference(missing_id),
+        );
+        assert_error_code(detect_blocks_impl(&pdf), "BW_PDF_ANNOTATIONS_INVALID");
+    }
+
+    #[test]
+    fn detect_blocks_rejects_reversed_widget_rectangles() {
+        let pdf = fixture_with_first_widget_rect(&make_fixture_pdf(), rect(250, 700, 50, 724));
+        assert_error_code(detect_blocks_impl(&pdf), "BW_PDF_WIDGET_RECT_INVALID");
+    }
+
+    #[test]
+    fn detect_blocks_rejects_malformed_widget_rectangles() {
+        let malformed_length = Object::Array(vec![
+            Object::Integer(50),
+            Object::Integer(700),
+            Object::Integer(250),
+        ]);
+        let pdf = fixture_with_first_widget_rect(&make_fixture_pdf(), malformed_length);
+        assert_error_code(detect_blocks_impl(&pdf), "BW_PDF_WIDGET_RECT_INVALID");
+
+        let malformed_type = Object::Array(vec![
+            Object::Integer(50),
+            name("not-a-number"),
+            Object::Integer(250),
+            Object::Integer(724),
+        ]);
+        let pdf = fixture_with_first_widget_rect(&make_fixture_pdf(), malformed_type);
+        assert_error_code(detect_blocks_impl(&pdf), "BW_PDF_WIDGET_RECT_INVALID");
+    }
+
+    #[test]
+    fn detect_blocks_rejects_integer_coordinates_that_lose_f32_precision() {
+        let imprecise_rect = rect(16_777_217, 700, 16_777_250, 724);
+        let pdf = fixture_with_first_widget_rect(&make_fixture_pdf(), imprecise_rect);
+        assert_error_code(detect_blocks_impl(&pdf), "BW_PDF_WIDGET_RECT_INVALID");
+    }
+
+    #[test]
+    fn detect_blocks_reports_unresolved_annotation_references() {
+        let missing_id = (u32::MAX, u16::MAX);
+        let pdf = fixture_with_page_annots(
+            &make_fixture_pdf(),
+            Object::Array(vec![Object::Reference(missing_id)]),
+        );
+        assert_error_code(detect_blocks_impl(&pdf), "BW_PDF_ANNOTATION_UNRESOLVED");
+    }
+
+    #[test]
+    fn detect_blocks_ignores_valid_non_widget_annotations() {
+        let annotation = Object::Dictionary(dictionary! {
+            "Type" => name("Annot"),
+            "Subtype" => name("Text"),
+            "Rect" => rect(50, 700, 250, 724),
+        });
+        let pdf = fixture_with_page_annots(&make_fixture_pdf(), Object::Array(vec![annotation]));
+        let blocks = detect_blocks_impl(&pdf).expect("non-widget annotations are valid");
+        assert!(blocks.is_empty());
+    }
+
+    #[test]
+    fn detect_blocks_reports_non_dictionary_annotations() {
+        let pdf = fixture_with_page_annots(
+            &make_fixture_pdf(),
+            Object::Array(vec![name("not-a-dictionary")]),
+        );
+        assert_error_code(detect_blocks_impl(&pdf), "BW_PDF_ANNOTATION_INVALID");
     }
 
     #[test]

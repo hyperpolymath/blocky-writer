@@ -3,7 +3,7 @@
 
 === CRG Grade: C — ACHIEVED 2026-04-04
 
-Last reviewed: 2026-09-27.
+Last reviewed: 2026-11-01.
 
 === Current Test State
 
@@ -12,17 +12,24 @@ Last reviewed: 2026-09-27.
 |Category |Count |Notes
 |Test directories |1 |Location(s): /tests (aspect + fuzz placeholder)
 |CI workflows |14 |`.github/workflows/*.yml`. `ci.yml` runs the Rust core checks; `actions.lock` is a file, not a workflow. See docs/ci/CHECK-DETERMINATIONS.adoc
-|Unit tests |6 |Rust `pdftool_core` — `cargo test --manifest-path rust/pdftool_core/Cargo.toml --locked`
+|Unit tests |17 in source |Rust `pdftool_core` — 6 existing fill/error tests + 11 direct detector tests in the current working diff. Current diff is uncompiled and unrun.
 |===
 
 === What's Covered
 
-* [x] Rust core unit tests (block detection, `fill_blocks_*` AcroForm writeback for
-  `Tx`/`Ch`/`Btn` fields, taxonomy errors) — 6 tests, all green on `main` at `e1b6225`
-* [x] `cargo fmt -- --check` in CI — green
-* [x] `cargo clippy --all-targets -- -D warnings` in CI — green (the two remaining
-  lints were fixed in #73)
-* [x] `actions.lock` synchronisation gate (`lock-sync-gate.yml`) — green on `main`
+* [x] Rust core baseline CI on `main` — run `38818494415` at `3fd5ba1`
+  passed formatting, tests, and Clippy (actor `hyperpolymath`). That run predates
+  this branch's detector changes.
+* [ ] Current working diff — 17 test functions are present, including 11 direct
+  detector tests for valid widgets, indirect rectangles, malformed annotation
+  arrays/references, invalid rectangles, and non-widget annotations. They have
+  not been compiled or run because this sandbox has no Rust toolchain.
+* [ ] `actions.lock` synchronisation gate — failing on current `main` at run
+  `38818494312`; the YAML uses `smtp-notify-action@v0.5.0` while generated lock
+  metadata records `v0.3.0`. Do not hand-edit the generated file.
+* [ ] Governance Actions lock verification — failed at run `38818495000` for
+  the same lock drift; other job outcomes and additional current failures are
+  recorded in `docs/ci/CHECK-DETERMINATIONS.adoc`.
 
 === Still Missing (for CRG B+)
 

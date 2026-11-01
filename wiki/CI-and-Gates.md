@@ -63,6 +63,17 @@ only job in that workflow:
 
 ## Known problems — read before you trust a green
 
+* **Current main CI state (2026-11-01).** Rust CI passed on `3fd5ba1` in run
+  `38818494415`, but Governance (`38818495000`) and Lock Sync Gate
+  (`38818494312`) failed at generated-lock verification. The workflow uses
+  `hyperpolymath/smtp-notify-action@v0.5.0`; the generated lock still records
+  v0.3.0. Do not hand-edit `actions.lock`; use the prescribed `gh actions-lock`
+  generator, then verify the result. The current Arena feature branch has not
+  been compiled or tested.
+* **Other current failures.** Scheduled CodeQL run `41099036814` and Hypatia
+  run `41255373342` failed during job setup; mirror run `38818495057` had four
+  failing destinations. Logs were unavailable during the review, so causes are
+  unknown. See `docs/ci/CHECK-DETERMINATIONS.adoc` for step-level evidence.
 * **Two Pages workflows.** `pages.yml` and `casket-pages.yml` both build and
   deploy to the `github-pages` environment under the same `pages` concurrency
   group, so they cancel each other. `pages.yml` also looks for `README.md`,

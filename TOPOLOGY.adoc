@@ -1,8 +1,8 @@
 == blocky-writer — Project Topology
 
 ....
-Last updated: 2026-09-27
-Status: Rust core green (fmt + 6 tests + clippy); frontend prototype, no build pipeline
+Last updated: 2026-11-01
+Status: main Rust CI passed at `3fd5ba1`; current 17-test source diff is unverified; frontend prototype, no build pipeline
 ....
 
 === System Architecture
@@ -65,20 +65,20 @@ EXTENSION LAYERS
   Extension bundle pipeline         ░░░░░░░░░░   0%    deno.json removed in #43; no toolchain
 
 CORE (RUST/WASM)
-  pdftool_core (WASM)               ████████░░  80%    detect_blocks + fill_blocks, 6 tests green
+  pdftool_core (WASM)               ████████░░  80%    Main baseline passes CI; 17 tests in source, 11 new detector tests unverified
   AcroForm Writeback                ████████░░  80%    Tx / Ch / Btn only; no Sig
   Ruled-line & cell detection       ░░░░░░░░░░   0%    NOT IMPLEMENTED — the "hand spacing" case
-  Error Taxonomy                    ██████████ 100%    20 stable BW_* codes
+  Error Taxonomy                    ████████░░  80%    24 codes in source; 4 new codes need Rust + compatibility review
 
 REPO INFRASTRUCTURE
-  Rust CI (fmt/test/clippy)         ██████████ 100%    ci.yml rust-core job — green
-  Lock Sync Gate                    ██████████ 100%    lock-sync-gate.yml — green on main
-  Documentation                     ████████░░  80%    README/TOPOLOGY/wiki corrected 2026-09-27
-  .machine_readable/                ██████████ 100%    STATE.a2ml tracking
+  Rust CI (fmt/test/clippy)         ██████████ 100%    main run 38818494415 passed at 3fd5ba1; branch unverified
+  Lock Sync Gate                    ░░░░░░░░░░   0%    main run 38818494312 failed on generated-lock drift
+  Documentation                     ████████░░  80%    Human-readable status refreshed 2026-11-01; machine state remains stale
+  .machine_readable/                ████░░░░░░  40%    STATE.a2ml exists but is stale; A2ML/DEED owner ruling pending
   Containerfile                     ██████████ 100%    Reproducible dev env
 
 ─────────────────────────────────────────────────────────────────────────────
-OVERALL:                            █████░░░░░  ~50%   Rust core ready; extension not release-ready
+OVERALL:                            █████░░░░░  ~50%   Main Rust baseline passes; branch validation pending; extension not release-ready
 ....
 
 === Key Dependencies

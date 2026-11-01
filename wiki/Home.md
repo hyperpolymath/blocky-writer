@@ -38,8 +38,10 @@ is versioned, diffable and reviewable like any other file. See
 
 ## Current status in one paragraph
 
-The Rust core (`rust/pdftool_core`) is implemented, unit-tested and green on
-`cargo fmt`, `cargo test --locked` and `cargo clippy -D warnings`. The
+The Rust core's baseline on `main` passed `cargo fmt`, `cargo test --locked`,
+and `cargo clippy -D warnings` in run `38818494415` at `3fd5ba1`. The current
+session branch adds detector validation and tests, but those edits have not been
+compiled or run here because the Rust toolchain is absent. The
 browser-extension frontend is a **prototype**: this checkout has no
 AffineScript compiler configuration, no JavaScript package manifest and no
 reproducible extension bundle pipeline, so there is nothing to build or release
