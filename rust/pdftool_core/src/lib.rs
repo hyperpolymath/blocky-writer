@@ -53,6 +53,8 @@ fn resolve_object(doc: &Document, obj: &Object) -> Result<Object, lopdf::Error> 
     }
 }
 
+/// Resolves a PDF number, returning `None` for unresolved or cyclic references,
+/// non-numbers, non-finite reals, or integers that cannot be represented exactly.
 fn object_to_number(doc: &Document, obj: &Object) -> Option<f64> {
     let mut resolved = obj.clone();
     let mut references = HashSet::new();
@@ -80,6 +82,9 @@ fn object_to_number(doc: &Document, obj: &Object) -> Option<f64> {
     }
 }
 
+/// Converts two diagonally opposite corners in either order to a rectangle
+/// `(x, y, width, height)`, using the smaller coordinates as the origin. Zero
+/// extents are accepted; non-finite coordinates or extents return `None`.
 fn rect_from_coordinates(x1: f64, y1: f64, x2: f64, y2: f64) -> Option<(f64, f64, f64, f64)> {
     if ![x1, y1, x2, y2]
         .iter()
@@ -106,6 +111,9 @@ fn rect_from_coordinates(x1: f64, y1: f64, x2: f64, y2: f64) -> Option<(f64, f64
     Some((llx, lly, width, height))
 }
 
+/// Converts a direct four-element PDF rectangle array to `(x, y, width, height)`.
+/// Coordinates may be indirect. Other objects, invalid numbers or non-finite
+/// extents yield `None`.
 fn rect_from_object(doc: &Document, obj: &Object) -> Option<(f64, f64, f64, f64)> {
     let Object::Array(values) = obj else {
         return None;
@@ -619,6 +627,14 @@ fn apply_field_value(
     }
 }
 
+/// Detects widget annotations in PDF page order and returns their labels and
+/// rectangles in PDF user space. Corner order is normalised, and
+/// missing labels fall back to `field_<page>_<annotation>`.
+///
+/// Missing, null or unresolved annotation entries and non-widget annotations
+/// are skipped. Returns an error for empty or unreadable PDFs, unreadable or
+/// invalid pages, non-array `Annots`, non-dictionary annotations, or missing,
+/// unresolved or invalid widget rectangles.
 fn detect_blocks_impl(pdf_data: &[u8]) -> CoreResult<Vec<Block>> {
     if pdf_data.is_empty() {
         return Err(core_error("BW_PDF_EMPTY", "empty PDF payload"));
