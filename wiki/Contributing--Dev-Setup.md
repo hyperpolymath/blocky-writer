@@ -53,8 +53,11 @@ cargo test   --manifest-path rust/pdftool_core/Cargo.toml --locked
 cargo clippy --manifest-path rust/pdftool_core/Cargo.toml --locked --all-targets -- -D warnings
 ```
 
-`cargo test` runs 6 tests. If you get a different number, something changed and
-the wiki is stale — fix the wiki.
+The current source contains 22 test functions: six fill/error tests, fourteen
+detector tests and two numeric-geometry tests. PR #78 implementation commit
+`9f9370e` passed formatting, tests and Clippy in run `41326285595`; this
+sandbox still has no Rust toolchain. Keep this count synchronized with
+`TEST-NEEDS.adoc`. Tests are not a formal proof or a real-world PDF corpus.
 
 ## Building the WASM package (optional)
 

@@ -5,13 +5,28 @@ Rust/WASM core for `blocky-writer`.
 == Implemented
 
 * `detect_blocks` parses PDF AcroForm widget annotations and returns their
-  labels and rectangles. It does not perform OCR or general-purpose visual
-  block detection.
+  labels and rectangles. PDF `/Rect` corner pairs may be supplied in either
+  order; chained indirect arrays and indirect coordinate values are resolved
+  with cycle protection; coordinates are returned in PDF user space as `f64`.
+  Missing, unresolved,
+  malformed, non-finite, or unrepresentable widget rectangles fail detection
+  with `BW_PDF_WIDGET_RECT_INVALID`. Null or dangling optional `/Annots` and
+  annotation entries are treated as absent; malformed non-null entries fail
+  with structured errors. This is not OCR or general-purpose visual block
+  detection, and no page-rotation or screen-coordinate transform is applied.
 * `fill_blocks` updates matching AcroForm field values and returns serialized
   PDF bytes. It supports the field types and validation covered by the unit
   tests; it is not a PDF renderer.
-* Core parsing and writeback behavior is covered by Rust unit tests in
-  `src/lib.rs`.
+* Synthetic-PDF unit tests in `src/lib.rs` cover representative widget detection,
+  rectangle/annotation validation, and selected `Tx` / `Ch` / `Btn` writeback
+  paths. The 22 source tests include 6 fill/error tests, 14 detector tests, and
+  2 direct numeric-geometry tests. Rust CI run `41326285595` at implementation
+  commit `9f9370e` passed formatting, tests, and Clippy. Chained indirect
+  references are cycle-protected. These are not general
+  PDF conformance tests or real-world corpus coverage.
+* `pdftool_core` is version `0.2.0`; the `Block` numeric representation and
+  three new public `BW_*` error codes are versioned as a breaking change.
+  Compatibility review of the error contract remains part of PR #78.
 
 == Native development checks
 

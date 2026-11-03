@@ -38,14 +38,17 @@ is versioned, diffable and reviewable like any other file. See
 
 ## Current status in one paragraph
 
-The Rust core (`rust/pdftool_core`) is implemented, unit-tested and green on
-`cargo fmt`, `cargo test --locked` and `cargo clippy -D warnings`. The
-browser-extension frontend is a **prototype**: this checkout has no
-AffineScript compiler configuration, no JavaScript package manifest and no
-reproducible extension bundle pipeline, so there is nothing to build or release
-yet. Do not read the completion percentages in `TOPOLOGY.adoc` as a statement
-about the frontend — see [CI-and-Gates](CI-and-Gates) for the current honest
-picture.
+The Rust core's `main` baseline passed formatting, tests and Clippy in run
+`38818494415` at `3fd5ba1`. PR #78 implementation commit `9f9370e` also passed
+all three Rust checks in run `41326285595` (22 tests). Other PR gates remain
+blocked: the generated Actions lock is out of sync, and CodeQL/Hypatia fail
+before analysis starts. This sandbox still has no Rust toolchain, so the run
+receipts are remote CI evidence. The browser-extension frontend is a
+**prototype**: this checkout has no AffineScript compiler configuration, no
+JavaScript package manifest and no reproducible extension bundle pipeline, so
+there is nothing to build or release yet. Do not read the completion percentages
+in `TOPOLOGY.adoc` as a statement about the frontend — see
+[CI-and-Gates](CI-and-Gates) for the current honest picture.
 
 ## Quick commands
 
