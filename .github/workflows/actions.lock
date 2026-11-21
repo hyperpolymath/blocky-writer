@@ -18,8 +18,7 @@ workflows:
     '.github/workflows/codeql.yml':
         - 'actions/checkout@v7.0.1'
         - 'github/codeql-action@b96794f015dfd88f77b49b1c93e0fa7110f94c63'
-    '.github/workflows/governance.yml':
-        - 'hyperpolymath/standards@fad242d35291de1898242d6737ba02b74a59a2f2'
+    '.github/workflows/governance.yml': []
     '.github/workflows/hypatia-scan.yml':
         - 'actions/checkout@v7.0.1'
         - 'actions/github-script@v9.0.0'
@@ -31,32 +30,20 @@ workflows:
     '.github/workflows/label-triage.yml': []
     '.github/workflows/labels.yml': []
     '.github/workflows/lock-sync-gate.yml': []
-    '.github/workflows/mirror.yml':
-        - 'hyperpolymath/standards@84355587cb2a1f86e6882de83514a32db2646e7a'
+    '.github/workflows/mirror.yml': []
     '.github/workflows/pages.yml':
         - 'actions/checkout@v7.0.1'
         - 'actions/deploy-pages@v5.0.1'
         - 'actions/upload-pages-artifact@v5.0.0'
     '.github/workflows/push-email-notify.yml':
         - 'hyperpolymath/smtp-notify-action@v0.5.0'
-    '.github/workflows/secret-scanner.yml':
-        - 'hyperpolymath/standards@84355587cb2a1f86e6882de83514a32db2646e7a'
+    '.github/workflows/secret-scanner.yml': []
 dependencies:
-    'actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9':
-        ref: '55cc8345863c7cc4c66a329aec7e433d2d1c52a9'
-        commit: 'sha1-55cc8345863c7cc4c66a329aec7e433d2d1c52a9'
-        owner_id: 44036562
-        repo_id: 215566462
     'actions/cache@v6.1.0':
         ref: 'v6.1.0'
         commit: 'sha1-55cc8345863c7cc4c66a329aec7e433d2d1c52a9'
         owner_id: 44036562
         repo_id: 215566462
-    'actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1':
-        ref: '3d3c42e5aac5ba805825da76410c181273ba90b1'
-        commit: 'sha1-3d3c42e5aac5ba805825da76410c181273ba90b1'
-        owner_id: 44036562
-        repo_id: 197814629
     'actions/checkout@v7.0.1':
         ref: 'v7.0.1'
         commit: 'sha1-3d3c42e5aac5ba805825da76410c181273ba90b1'
@@ -94,26 +81,11 @@ dependencies:
         repo_id: 496012378
         uses:
             - 'actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f'
-    'dtolnay/rust-toolchain@6c977a6ca4077a0ceb28ffbe03f59d46e9ac8772':
-        ref: '6c977a6ca4077a0ceb28ffbe03f59d46e9ac8772'
-        commit: 'sha1-6c977a6ca4077a0ceb28ffbe03f59d46e9ac8772'
-        owner_id: 1940490
-        repo_id: 260749683
     'dtolnay/rust-toolchain@v1':
         ref: 'v1'
         commit: 'sha1-6c977a6ca4077a0ceb28ffbe03f59d46e9ac8772'
         owner_id: 1940490
         repo_id: 260749683
-    'editorconfig-checker/action-editorconfig-checker@840e866d93b8e032123c23bac69dece044d4d84c':
-        ref: '840e866d93b8e032123c23bac69dece044d4d84c'
-        commit: 'sha1-840e866d93b8e032123c23bac69dece044d4d84c'
-        owner_id: 26415196
-        repo_id: 297874902
-    'erlef/setup-beam@54075bcc5e249e4758d363f27d099f55d843f124':
-        ref: '54075bcc5e249e4758d363f27d099f55d843f124'
-        commit: 'sha1-54075bcc5e249e4758d363f27d099f55d843f124'
-        owner_id: 47606891
-        repo_id: 331103973
     'erlef/setup-beam@v1.24.1':
         ref: 'v1.24.1'
         commit: 'sha1-54075bcc5e249e4758d363f27d099f55d843f124'
@@ -134,32 +106,8 @@ dependencies:
         commit: 'sha1-c1c9fa07992a02c1fd3d67a0dc1b08cccb852aef'
         owner_id: 6759885
         repo_id: 1352485172
-    'hyperpolymath/standards@84355587cb2a1f86e6882de83514a32db2646e7a':
-        ref: '84355587cb2a1f86e6882de83514a32db2646e7a'
-        commit: 'sha1-84355587cb2a1f86e6882de83514a32db2646e7a'
-        owner_id: 6759885
-        repo_id: 1116521501
-        uses:
-            - 'actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1'
-            - 'dtolnay/rust-toolchain@6c977a6ca4077a0ceb28ffbe03f59d46e9ac8772'
-            - 'webfactory/ssh-agent@e83874834305fe9a4a2997156cb26c5de65a8555'
-    'hyperpolymath/standards@fad242d35291de1898242d6737ba02b74a59a2f2':
-        ref: 'fad242d35291de1898242d6737ba02b74a59a2f2'
-        commit: 'sha1-fad242d35291de1898242d6737ba02b74a59a2f2'
-        owner_id: 6759885
-        repo_id: 1116521501
-        uses:
-            - 'actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9'
-            - 'actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1'
-            - 'editorconfig-checker/action-editorconfig-checker@840e866d93b8e032123c23bac69dece044d4d84c'
-            - 'erlef/setup-beam@54075bcc5e249e4758d363f27d099f55d843f124'
     'peter-evans/repository-dispatch@v4.0.1':
         ref: 'v4.0.1'
         commit: 'sha1-28959ce8df70de7be546dd1250a005dd32156697'
         owner_id: 18365890
         repo_id: 220359305
-    'webfactory/ssh-agent@e83874834305fe9a4a2997156cb26c5de65a8555':
-        ref: 'e83874834305fe9a4a2997156cb26c5de65a8555'
-        commit: 'sha1-e83874834305fe9a4a2997156cb26c5de65a8555'
-        owner_id: 135788
-        repo_id: 208510314
