@@ -22,20 +22,15 @@ updates:
       # reviews, not what a bot can emit (estate policy).
       interval: "weekly"
     groups:
+      # init, analyze and upload-sarif must always run the same
+      # github/codeql-action release, so they move together in one PR. This
+      # group is listed first so it claims them before the catch-all below.
+      # The trailing * is load-bearing: Dependabot tracks each subpath action
+      # (init, analyze, upload-sarif) as its own dependency name.
+      codeql:
+        patterns:
+          - "github/codeql-action*"
       actions:
         patterns:
           - "*"
     open-pull-requests-limit: 2
-    ignore:
-      # HOLD: github/codeql-action at v4.38.0 (SHA-pinned b96794f0). v4.38.1
-      # (1c5b6756) fails GitHub workflow-startup validation estate-wide
-      # (nexia-list#100). Hold until upstream clears 4.38.1 or a newer release
-      # verifies green; revisit deliberately, not weekly.
-      #
-      # The trailing * is load-bearing. Workflows reference the SUBPATH actions
-      # (github/codeql-action/init, /analyze, /upload-sarif) and Dependabot
-      # treats each subpath as its own dependency name -- so the previous bare
-      # "github/codeql-action" entry matched NONE of them. That is how #69
-      # re-bumped 4.38.0 -> 4.38.1 straight through the hold that #64 set and
-      # #68 re-asserted.
-      - dependency-name: "github/codeql-action*"
